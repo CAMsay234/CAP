@@ -29,6 +29,10 @@ def create_app():
     # Registrar los blueprints de las rutas
     from app.routes.paciente import pacientes_bp
     app.register_blueprint(pacientes_bp)
+    from app.routes.pruebas import pruebas_bp
+    app.register_blueprint(pruebas_bp)
+    from app.routes.sub_pruebas import subpruebas_bp
+    app.register_blueprint(subpruebas_bp)
 
     return app
 
