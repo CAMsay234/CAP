@@ -33,6 +33,22 @@ def create_app():
     app.register_blueprint(pruebas_bp)
     from app.routes.sub_pruebas import subpruebas_bp
     app.register_blueprint(subpruebas_bp)
+    from app.routes.areas import areas_bp
+    app.register_blueprint(areas_bp)
+    from app.routes.comentarios_clinicos import comentarios_bp
+    app.register_blueprint(comentarios_bp)
+    from app.routes.historia_clinica import historias_bp
+    app.register_blueprint(historias_bp)
+    from app.routes.nivel_escolaridad import nivel_escolaridad_bp
+    app.register_blueprint(nivel_escolaridad_bp)
+    from app.routes.estado_mental import estado_mental_bp
+    app.register_blueprint(estado_mental_bp)
+    from app.routes.evaluacion_neuropsicologica import evaluaciones_bp
+    app.register_blueprint(evaluaciones_bp)
+    from app.routes.hipotesis import hipotesis_bp
+    app.register_blueprint(hipotesis_bp) 
+    from app.routes.diagnostico import diagnosticos_bp
+    app.register_blueprint(diagnosticos_bp)
 
     return app
 
