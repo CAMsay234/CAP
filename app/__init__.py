@@ -24,6 +24,7 @@ def create_app():
     from app.models.hipotesis import Hipotesis
     from app.models.diagnostico import Diagnostico
     from app.models.seguimiento import Seguimiento
+    from app.models.usuario import Usuario
     # Agrega todas las importaciones de modelos necesarias
 
     # Registrar los blueprints de las rutas
@@ -49,6 +50,8 @@ def create_app():
     app.register_blueprint(hipotesis_bp) 
     from app.routes.diagnostico import diagnosticos_bp
     app.register_blueprint(diagnosticos_bp)
+    from app.routes.auth import auth_bp
+    app.register_blueprint(auth_bp)
 
     return app
 

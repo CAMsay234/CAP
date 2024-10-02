@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSpacerItem, QSizePolicy
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
+from registro import RegisterWindow  # Importar la ventana de registro
 
 class LoginWindow(QMainWindow):
     def __init__(self):
@@ -37,7 +38,6 @@ class LoginWindow(QMainWindow):
         # Crear una etiqueta para el título
         titulo = QLabel("SISTEMA AUTOMATIZADO PARA LA GESTIÓN DE DATOS CLÍNICOS Y NEUROPSICOLÓGICOS")
         titulo.setFont(QFont('Arial', 16))
-        titulo.setStyleSheet("color: white;")
         titulo.setAlignment(Qt.AlignCenter)
         title_layout.addWidget(titulo, alignment=Qt.AlignCenter)
 
@@ -51,28 +51,33 @@ class LoginWindow(QMainWindow):
         # Crear los campos de usuario y contraseña
         self.input_usuario = QLineEdit()
         self.input_usuario.setPlaceholderText("USUARIO")
-        self.input_usuario.setFixedHeight(40)  # Tamaño del recuadro
-        self.input_usuario.setFixedWidth(300)   # Ancho ajustado
 
         self.input_contrasena = QLineEdit()
         self.input_contrasena.setPlaceholderText("CONTRASEÑA")
         self.input_contrasena.setEchoMode(QLineEdit.Password)
-        self.input_contrasena.setFixedHeight(40)  # Tamaño del recuadro
-        self.input_contrasena.setFixedWidth(300)   # Ancho ajustado
 
         form_layout.addWidget(self.input_usuario, alignment=Qt.AlignCenter)
         form_layout.addWidget(self.input_contrasena, alignment=Qt.AlignCenter)
 
         # Crear el botón de inicio de sesión
         self.boton_login = QPushButton("ENTRAR")
-        self.boton_login.setFixedHeight(40)
-        self.boton_login.setFixedWidth(150)
         form_layout.addWidget(self.boton_login, alignment=Qt.AlignCenter)
+
+        # Crear un layout horizontal para "¿Olvidaste tu contraseña?" y "Registrarse"
+        buttons_layout = QHBoxLayout()
 
         # Crear el botón de "¿Olvidaste tu contraseña?"
         self.boton_olvido_contrasena = QPushButton("¿Olvidaste la contraseña?")
-        self.boton_olvido_contrasena.setStyleSheet("background-color: none; border: none; color: white; text-decoration: underline;")
-        form_layout.addWidget(self.boton_olvido_contrasena, alignment=Qt.AlignCenter)
+        self.boton_olvido_contrasena.setProperty('flat', True)
+        buttons_layout.addWidget(self.boton_olvido_contrasena, alignment=Qt.AlignCenter)
+
+        # Crear el botón de "Registrarse"
+        self.boton_registro = QPushButton("Registrarse")
+        self.boton_registro.setProperty('flat', True)
+        buttons_layout.addWidget(self.boton_registro, alignment=Qt.AlignCenter)
+
+        # Añadir los botones al layout
+        form_layout.addLayout(buttons_layout)
 
         # Añadir el formulario al layout principal
         main_layout.addLayout(form_layout)
@@ -82,30 +87,30 @@ class LoginWindow(QMainWindow):
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
-        # Aplicar estilos
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #005BBB;
-            }
-            QLineEdit {
-                background-color: white;
-                border-radius: 10px;
-                padding-left: 10px;
-                font-size: 16px;
-            }
-            QPushButton {
-                background-color: #FFFFFF;
-                border-radius: 10px;
-                font-size: 16px;
-            }
-        """)
+        # Conectar el botón de registro con la acción para abrir la ventana de registro
+        self.boton_registro.clicked.connect(self.abrir_registro)
+
+    def abrir_registro(self):
+        # Abrir la ventana de registro
+        self.registro_ventana = RegisterWindow()
+        self.registro_ventana.show()
+
+# Función para cargar el archivo de estilos
+def load_stylesheet(app):
+    stylesheet_path = os.path.join(os.path.dirname(__file__), 'styles.qss')  # Ruta asegurada
+    with open(stylesheet_path, "r") as file:
+        app.setStyleSheet(file.read())
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    # Crear una instancia de la ventana y mostrarla
+    # Cargar el stylesheet general
+    load_stylesheet(app)
+
+    # Crear una instancia de la ventana de login y mostrarla
     ventana = LoginWindow()
     ventana.show()
 
     sys.exit(app.exec_())
+
