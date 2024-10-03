@@ -1,0 +1,38 @@
+/* Estilo de la ventana principal */
+QMainWindow {
+    background-color: #005BBB;
+}
+
+/* Estilo para los campos de texto */
+QLineEdit {
+    background-color: white;
+    border-radius: 10px;
+    padding-left: 10px;
+    font-size: 16px;
+    height: 40px;
+    width: 300px;
+}
+
+/* Estilo para los botones generales */
+QPushButton {
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    font-size: 16px;
+    height: 40px;
+    width: 150px;
+}
+
+/* Estilo para los botones de texto sin fondo (como "Olvidaste la contraseña") */
+QPushButton[flat="true"] {
+    background-color: none;
+    border: none;
+    color: white;
+    text-decoration: underline;
+}
+
+/* Estilo del texto del título */
+QLabel {
+    color: white;
+    font-family: Arial;
+    font-size: 16px;
+}
