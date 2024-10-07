@@ -4,14 +4,15 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushB
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 from registro import RegisterWindow  # Importar la ventana de registro
+from tipo_historia import TipoHistoriaWindow  # Importar la nueva ventana de tipo de historia
 
 class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Configurar la ventana
+        # Configurar la ventana para que se abra en modo pantalla completa
         self.setWindowTitle("Sistema Automatizado para la Gestión de Datos Clínicos y Neuropsicológicos")
-        self.setGeometry(100, 100, 800, 600)  # Tamaño inicial de la ventana
+        self.showFullScreen()  # Abrir la ventana en pantalla completa
 
         # Crear el layout principal
         main_layout = QVBoxLayout()
@@ -22,7 +23,7 @@ class LoginWindow(QMainWindow):
         # Cargar la imagen correctamente escalada
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')  # Asegúrate de que la imagen esté en la carpeta correcta
         self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Escalar imagen manteniendo proporción
+        pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Escalar imagen manteniendo proporción
         self.logo.setPixmap(pixmap)
         image_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
@@ -37,7 +38,7 @@ class LoginWindow(QMainWindow):
 
         # Crear una etiqueta para el título
         titulo = QLabel("SISTEMA AUTOMATIZADO PARA LA GESTIÓN DE DATOS CLÍNICOS Y NEUROPSICOLÓGICOS")
-        titulo.setFont(QFont('Arial', 16))
+        titulo.setFont(QFont('Arial', 60))
         titulo.setAlignment(Qt.AlignCenter)
         title_layout.addWidget(titulo, alignment=Qt.AlignCenter)
 
@@ -89,6 +90,15 @@ class LoginWindow(QMainWindow):
 
         # Conectar el botón de registro con la acción para abrir la ventana de registro
         self.boton_registro.clicked.connect(self.abrir_registro)
+
+        # Conectar el botón de login para abrir la nueva ventana de tipo historia
+        self.boton_login.clicked.connect(self.abrir_tipo_historia)
+
+    def abrir_tipo_historia(self):
+        # Cerrar la ventana actual y abrir la nueva ventana
+        self.tipo_historia_ventana = TipoHistoriaWindow()  # Crear la nueva ventana
+        self.tipo_historia_ventana.show()  # Mostrar la nueva ventana
+        self.close()  # Cerrar la ventana actual
 
     def abrir_registro(self):
         # Abrir la ventana de registro
