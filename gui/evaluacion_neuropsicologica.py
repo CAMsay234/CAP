@@ -121,20 +121,34 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         button_style = """
             QPushButton {
                 background-color: #F0F0F0;
-                color: #808080;
+                color: #005BBB;
                 font-size: 18px;
                 padding: 20px;
                 border-radius: 10px;
-                border: 1px solid #D0D0D0;
+                border: 2px solid #005BBB;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
             }
         """
 
         # Agregar botones al grid
-        positions = [(i, j) for i in range(3) for j in range(3)]  # 3x3 grid layout
-        for (button_name, action), position in zip(self.buttons.items(), positions):
+        # Reorganizamos las posiciones para que "CAPACIDAD INTELECTUAL" esté debajo de "PROCESOS DE MEMORIA"
+        positions = {
+            "ATENCIÓN Y CONCENTRACIÓN": (0, 0),
+            "PROCESOS PERCEPTUALES": (0, 1),
+            "FUNCIONES NEUROCOGNITIVAS": (0, 2),
+            "LENGUAJE": (1, 0),
+            "PROCESOS DE MEMORIA": (1, 1),
+            "FUNCIÓN EJECUTIVA": (1, 2),
+            "CAPACIDAD INTELECTUAL": (2, 1),  # Mover "CAPACIDAD INTELECTUAL" debajo de "PROCESOS DE MEMORIA"
+        }
+
+# Añadimos los botones al grid usando las posiciones especificadas
+        for button_name, position in positions.items():
             button = QPushButton(button_name)
             button.setStyleSheet(button_style)
-            button.clicked.connect(action)  # Conectar el clic con la función correspondiente
+            button.clicked.connect(self.buttons[button_name])  # Conectar el clic con la función correspondiente
             evaluation_grid.addWidget(button, *position)
 
         # Agregar grid al layout principal
