@@ -1,3 +1,4 @@
+
 import sys
 import os
 import requests
@@ -95,7 +96,6 @@ class SeleccionarPacienteWindow(QMainWindow):
         buscar_button_layout = QHBoxLayout()
         self.boton_buscar = QPushButton("Buscar Paciente")
         self.boton_buscar.setFont(QFont('Arial', 16))
-        self.boton_buscar.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'src', 'lupa.png')))  # Ruta para el ícono
         self.boton_buscar.setStyleSheet("""
             QPushButton {
                 background-color: #005BBB;
@@ -128,9 +128,39 @@ class SeleccionarPacienteWindow(QMainWindow):
         # Crear el botón para ver la historia clínica
         self.boton_historia_clinica = QPushButton("Ver Historia Clínica")
         self.boton_historia_clinica.setFont(QFont('Arial', 14))
+        self.boton_historia_clinica.setStyleSheet("""
+            QPushButton {
+                background-color: #005BBB;
+                color: white;
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #003F73;
+            }
+        """)
         self.boton_historia_clinica.setVisible(False)  # Se oculta hasta que se haga una búsqueda exitosa
         self.boton_historia_clinica.clicked.connect(self.ir_a_historia_clinica)
         form_layout.addWidget(self.boton_historia_clinica, alignment=Qt.AlignCenter)
+
+        #Crear boton para ir a evaluacion neuropsicologica
+        self.boton_evaluacion_neuropsicologica = QPushButton("Evaluación Neuropsicológica")
+        self.boton_evaluacion_neuropsicologica.setFont(QFont('Arial', 14))
+        self.boton_evaluacion_neuropsicologica.setStyleSheet("""
+            QPushButton {
+                background-color: #005BBB;
+                color: white;
+                border-radius: 10px;
+                padding: 10px;
+                width: 200px;
+            }
+            QPushButton:hover {
+                background-color: #003F73;
+            }
+        """)
+        self.boton_evaluacion_neuropsicologica.setVisible(False)  # Se oculta hasta que se haga una búsqueda exitosa
+        self.boton_evaluacion_neuropsicologica.clicked.connect(self.ir_a_evaluacion_neuropsicologica)
+        form_layout.addWidget(self.boton_evaluacion_neuropsicologica, alignment=Qt.AlignCenter)
 
         # Añadir los layouts al layout principal
         main_layout.addWidget(form_background)
@@ -167,6 +197,7 @@ class SeleccionarPacienteWindow(QMainWindow):
                         
                         # Mostrar botón "Ver Historia Clínica"
                         self.boton_historia_clinica.setVisible(True)
+                        self.boton_evaluacion_neuropsicologica.setVisible(True)
                     else:
                         self.label_resultado_paciente.setText("Formato de respuesta inesperado o falta de campo 'nombre'.")
                 except ValueError as e:
@@ -198,6 +229,14 @@ class SeleccionarPacienteWindow(QMainWindow):
             self.close()  # Cerrar la ventana actual
         else:
             QMessageBox.warning(self, "Error", "No se ha seleccionado un paciente.")
+    
+    def ir_a_evaluacion_neuropsicologica(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            # Pasar los datos del paciente seleccionado a la nueva ventana
+            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()#pself.paciente_seleccionado)
+            self.evaluacion_neuropsicologica_window.show()
+            self.close()
 
 # Función para cargar el archivo de estilos
 def load_stylesheet(app):

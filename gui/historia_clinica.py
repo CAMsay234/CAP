@@ -1,23 +1,24 @@
 import sys
 import os
-import requests
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QApplication
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 
 class HistoriaClinicaWindow(QMainWindow):
-    def __init__(self, paciente):
+    def __init__(self, paciente_seleccionado):
         super().__init__()
 
+        self.paciente_seleccionado = paciente_seleccionado  # Datos del paciente seleccionado
+
         # Configurar la ventana
-        self.setWindowTitle(f"Historia Clínica de {paciente['nombre']}")
+        self.setWindowTitle(f"Historia Clínica de {self.paciente_seleccionado['nombre']}")
         self.showMaximized()
         self.setStyleSheet("background-color: white;")
 
         # Layout principal
         main_layout = QVBoxLayout()
 
-        # Crear la barra azul con el logo y el campo de código
+        # Crear la barra azul con el logo y el botón de "Volver"
         header_layout = QHBoxLayout()
 
         # Crear un widget que actúe como barra azul
@@ -28,7 +29,7 @@ class HistoriaClinicaWindow(QMainWindow):
 
         # Logo de UPB
         logo_label = QLabel()
-        logo_pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'src', 'upb.png')).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logo_pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'src', 'upb.png')).scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         logo_label.setPixmap(logo_pixmap)
         header_background_layout.addWidget(logo_label, alignment=Qt.AlignLeft)
 
@@ -38,35 +39,43 @@ class HistoriaClinicaWindow(QMainWindow):
         titulo.setStyleSheet("color: white;")
         header_background_layout.addWidget(titulo, alignment=Qt.AlignCenter)
 
-        # Campo de código y nombre
-        codigo_layout = QVBoxLayout()
-        codigo_label = QLabel("Código:")
-        codigo_label.setFont(QFont('Arial', 14))
-        codigo_label.setStyleSheet("color: white;")
-        codigo_layout.addWidget(codigo_label, alignment=Qt.AlignRight)
-
-        self.codigo_input = QLineEdit()
-        self.codigo_input.setText(str(paciente['codigo_hc']))  # Mostrar el código del paciente
-        self.codigo_input.setFixedWidth(100)
-        codigo_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
-
-        nombre_label = QLabel("Nombre paciente:")
-        nombre_label.setFont(QFont('Arial', 14))
-        nombre_label.setStyleSheet("color: white;")
-        codigo_layout.addWidget(nombre_label, alignment=Qt.AlignRight)
-
-        self.nombre_input = QLineEdit()
-        self.nombre_input.setText(paciente['nombre'])  # Mostrar el nombre del paciente
-        self.nombre_input.setFixedWidth(200)
-        codigo_layout.addWidget(self.nombre_input, alignment=Qt.AlignRight)
-
-        header_background_layout.addLayout(codigo_layout)
+        # Botón "Volver" en la esquina superior derecha
+        self.boton_volver = QPushButton("Volver")
+        self.boton_volver.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                color: #005BBB;
+                border-radius: 5px;
+                padding: 5px 15px;
+                font-size: 14px;
+                min-width: 80px;
+                border: 1px solid #005BBB;
+            }
+            QPushButton:hover {
+                background-color: #f0f0f0;
+            }
+        """)
+        self.boton_volver.clicked.connect(self.volver_a_seleccionar_registrar)
+        header_background_layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
 
         # Añadir el layout del fondo azul al header
         header_layout.addWidget(header_background)
         main_layout.addLayout(header_layout)
 
-        # Crear un espaciador debajo de la barra azul
+        # Añadir los campos de "Código" y "Nombre" debajo del banner
+        paciente_info_layout = QHBoxLayout()
+
+        codigo_label = QLabel(f"Código: {self.paciente_seleccionado['codigo_hc']}")
+        codigo_label.setProperty("subtitulo", True)
+        paciente_info_layout.addWidget(codigo_label, alignment=Qt.AlignLeft)
+
+        nombre_label = QLabel(f"Nombre: {self.paciente_seleccionado['nombre']}")
+        nombre_label.setProperty("subtitulo", True)
+        paciente_info_layout.addWidget(nombre_label, alignment=Qt.AlignLeft)
+
+        main_layout.addLayout(paciente_info_layout)
+
+        # Crear un espaciador debajo de los datos del paciente
         main_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
         # Scroll area para el contenido
@@ -77,32 +86,75 @@ class HistoriaClinicaWindow(QMainWindow):
         scroll_content = QWidget()
         scroll_layout = QFormLayout(scroll_content)
 
-        # Campos del formulario
+        # Campos del formulario con borde y en QTextEdit
         campos = [
             ("Motivo de consulta", "Ingrese el motivo de consulta del paciente"),
             ("Estado actual", "Describa el estado actual del paciente"),
             ("Historia médica y psiquiátrica anterior", "Ingrese la historia médica y psiquiátrica anterior"),
             ("Antecedentes psiquiátricos familiares", "Ingrese antecedentes psiquiátricos familiares"),
-            ("Historial personal", "Situaciones significativas (comportamentales, emocionales y socioafectivas)"),
-            ("Historial de la dinámica familiar relevante", "Describa la dinámica familiar relevante"),
-            ("Atención", "Describa la atención del paciente"),
-            ("Memoria", "Describa la memoria del paciente"),
-            ("Lenguaje", "Describa el lenguaje del paciente"),
-            ("Pensamiento", "Describa el pensamiento del paciente"),
-            ("Introspección", "Describe la introspección del paciente"),
-            ("Familiar", "Describa la información familiar del paciente"),
-            ("Pareja", "Describa la información sobre la pareja del paciente"),
-            ("Social", "Describa la información social del paciente"),
-            ("Laboral", "Describa la información laboral del paciente"),
+            ("Historia personal", "Ingrese la historia personal del paciente"),
+            ("Historia de la dinámica familiar", "Ingrese la historia de la dinámica familiar")
         ]
 
         for label, placeholder in campos:
             label_widget = QLabel(f"{label}:")
-            label_widget.setFont(QFont('Arial', 14))
-            input_widget = QLineEdit()
+            label_widget.setFont(QFont('Arial', 18))
+            input_widget = QTextEdit()  # Cambiado a QTextEdit
             input_widget.setPlaceholderText(placeholder)
             input_widget.setFont(QFont('Arial', 12))
+            input_widget.setStyleSheet("""
+                QTextEdit {
+                    border: 1px solid #005BBB;
+                    padding: 5px;
+                    height: 100px;  /* Aumenta la altura para permitir múltiples líneas */
+                }
+            """)
             scroll_layout.addRow(label_widget, input_widget)
+
+        scroll.setWidget(scroll_content)
+        main_layout.addWidget(scroll)
+
+        # Crear los botones en la parte inferior
+        button_layout = QVBoxLayout()
+
+        # Crear los botones para subpestañas
+        sub_buttons_layout = QHBoxLayout()
+
+        estado_mental_button = QPushButton("Estado Mental")
+        estado_mental_button.setFont(QFont('Arial', 16))
+        estado_mental_button.setStyleSheet("""
+            QPushButton {
+                background-color: #005BBB;
+                color: white;
+                padding: 10px;
+                border-radius: 5px;
+                min-width: 200px;
+            }
+            QPushButton:hover {
+                background-color: #003F73;
+            }
+        """)
+        estado_mental_button.clicked.connect(self.abrir_estado_mental)
+        sub_buttons_layout.addWidget(estado_mental_button)
+
+        areas_button = QPushButton("Áreas")
+        areas_button.setFont(QFont('Arial', 16))
+        areas_button.setStyleSheet("""
+            QPushButton {
+                background-color: #005BBB;
+                color: white;
+                padding: 10px;
+                border-radius: 5px;
+                min-width: 200px;
+            }
+            QPushButton:hover {
+                background-color: #003F73;
+            }
+        """)
+        areas_button.clicked.connect(self.abrir_areas)
+        sub_buttons_layout.addWidget(areas_button)
+
+        button_layout.addLayout(sub_buttons_layout)
 
         # Botón para guardar historia clínica
         boton_guardar = QPushButton("Guardar historia clínica")
@@ -113,36 +165,60 @@ class HistoriaClinicaWindow(QMainWindow):
                 color: white;
                 padding: 10px;
                 border-radius: 5px;
+                min-width: 200px;
             }
             QPushButton:hover {
                 background-color: #003F73;
             }
         """)
-        scroll_layout.addRow(boton_guardar)
+        button_layout.addWidget(boton_guardar, alignment=Qt.AlignCenter)
 
-        scroll.setWidget(scroll_content)
-        main_layout.addWidget(scroll)
+        # Añadir el layout de botones al layout principal
+        main_layout.addLayout(button_layout)
 
         # Crear el widget principal
         widget = QWidget()
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
+    def abrir_estado_mental(self):
+        dialog = EstadoMentalDialog(self)
+        dialog.exec_()
+
+    def abrir_areas(self):
+        dialog = AreasDialog(self)
+        dialog.exec_()
+
+    def volver_a_seleccionar_registrar(self):
+        # Ir a la ventana de seleccionar_registrar_paciente.py
+        from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
+        self.seleccionar_registrar_window = SeleccionarRegistrarPacienteWindow()
+        self.seleccionar_registrar_window.show()
+        self.close()  # Cerrar la ventana actual
+
+
+# Ventanas emergentes (diálogos) para Estado Mental y Áreas
+class EstadoMentalDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Estado Mental")
+        self.setFixedSize(400, 300)
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Ingrese los detalles del estado mental"))
+        self.setLayout(layout)
+
+class AreasDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Áreas")
+        self.setFixedSize(400, 300)
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Ingrese los detalles de las áreas"))
+        self.setLayout(layout)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    # Ejemplo de datos de paciente (aquí podrías pasar los datos reales)
-    paciente_ejemplo = {
-        'codigo_hc': 1234,
-        'nombre': 'Camilo Velasquez',
-        'documento': '1025640088',
-        'edad': 20,
-        'telefono': '3218360814',
-        'celular': '3193370656',
-        'remision': 'Neuropsiquiatra'
-    }
-
-    window = HistoriaClinicaWindow(paciente_ejemplo)
+    paciente = {'codigo_hc': 1, 'nombre': 'Camilo Velasquez'}
+    window = HistoriaClinicaWindow(paciente)
     window.show()
     sys.exit(app.exec_())
-

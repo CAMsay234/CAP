@@ -1,9 +1,10 @@
 import os
-from PyQt5.QtWidgets import QMainWindow,QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QSpacerItem, QSizePolicy, QGridLayout, QComboBox, QDateEdit
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QSpacerItem, QSizePolicy, QGridLayout, QComboBox, QDateEdit
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, QDate
 import requests  # Para realizar las solicitudes al backend
 from datetime import datetime
+from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la clase de la ventana de evaluación neuropsicológica
 
 class RegistrarPacienteWindow(QMainWindow):
     def __init__(self):
@@ -29,7 +30,7 @@ class RegistrarPacienteWindow(QMainWindow):
         # Logo de UPB
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
         self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.logo.setPixmap(pixmap)
         header_background_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
@@ -39,7 +40,6 @@ class RegistrarPacienteWindow(QMainWindow):
         titulo.setStyleSheet("color: white;")
         header_background_layout.addWidget(titulo, alignment=Qt.AlignCenter)
 
-        
         # Campo de código
         codigo_layout = QVBoxLayout()
         codigo_label = QLabel("Código:")
@@ -152,7 +152,6 @@ class RegistrarPacienteWindow(QMainWindow):
         form_widget.setLayout(form_layout)
         main_layout.addWidget(form_widget)
 
-
         # Crear los botones inferiores
         buttons_layout = QHBoxLayout()
 
@@ -164,17 +163,16 @@ class RegistrarPacienteWindow(QMainWindow):
                 font-size: 16px;
                 padding: 15px 30px;  /* Aumenta el padding */
                 border-radius: 10px;  /* Aumenta el radio del borde */
-                min-width: 250px;  /* Asegúrate de que el ancho sea lo suficientemente grande */
+                width: 250px;  /* Asegúrate de que el ancho sea lo suficientemente grande */
             }
             QPushButton:hover {
                 background-color: #003F73;  /* Color más oscuro al pasar el cursor */
             }
         """)
-          
         buttons_layout.addWidget(self.boton_guardar, alignment=Qt.AlignCenter)
-         # Conectar el botón "Guardar datos personales" con la función para guardar el paciente
-        self.boton_guardar.clicked.connect(self.guardar_paciente)
-        
+
+        # Conectar el botón "Guardar datos personales" con la función para guardar el paciente y abrir la ventana de evaluación
+        self.boton_guardar.clicked.connect(self.guardar_y_abrir_evaluacion)
 
         self.boton_continuar = QPushButton("Continuar historia clínica")
         self.boton_continuar.setStyleSheet("""
@@ -183,7 +181,7 @@ class RegistrarPacienteWindow(QMainWindow):
                 color: white;
                 font-size: 16px;
                 padding: 15px 30px;  /* Aumenta el padding */
-                border-radius: 10px;  /* Aumenta el radio del borde */
+                border-radius: 10px;  /* Asegúrate de que el ancho sea lo suficientemente grande */ 
                 min-width: 250px;  /* Asegúrate de que el ancho sea lo suficientemente grande */
             }
             QPushButton:hover {
@@ -216,7 +214,6 @@ class RegistrarPacienteWindow(QMainWindow):
             print(f"Error de conexión: {str(e)}")
 
     def obtener_siguiente_codigo(self):
-
         """Función para obtener el siguiente código disponible desde el backend."""
         url = "http://127.0.0.1:5000/pacientes/count"
         try:
@@ -230,60 +227,11 @@ class RegistrarPacienteWindow(QMainWindow):
             print(f"Error de conexión: {str(e)}")
             return "Error"
         
-    def guardar_paciente(self):
-        try:
-            # Validar y convertir los datos críticos
-            codigo = int(self.codigo_input.text())  # Convertir el código a entero
-            edad = int(self.edad_input.text())  # Convertir la edad a entero
+    def guardar_y_abrir_evaluacion(self):
+            """Cierra la ventana actual y abre la ventana SeleccionarPacienteWindow."""
+            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la ventana de selección de paciente
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()  # Crear la ventana de selección de paciente
+            self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de selección de paciente
+            self.close()  # Cerrar la ventana actual
 
-            # Obtener el ID del nivel de escolaridad seleccionado
-            id_escolaridad = self.escolaridad_combo.currentData()  # Obtiene el dato asociado (ID) de la opción seleccionada
-            if id_escolaridad is None:
-                raise ValueError("No se ha seleccionado un nivel de escolaridad válido.")
-
-            # Verificar campos obligatorios
-            if not self.documento_input.text() or not self.nombre_input.text() or not self.profesion_input.text():
-                raise ValueError("Todos los campos son obligatorios.")
-
-            # Obtener la fecha de nacimiento como objeto de tipo date
-            fecha_nacimiento_qdate = self.fecha_nacimiento_input.date()
-            fecha_nacimiento = datetime(
-                fecha_nacimiento_qdate.year(),
-                fecha_nacimiento_qdate.month(),
-                fecha_nacimiento_qdate.day()
-            ).date()
-
-            # Crear el diccionario de datos
-            data = {
-                'codigo': codigo,
-                'documento': self.documento_input.text(),
-                'nombre': self.nombre_input.text(),
-                'edad': edad,
-                'fecha_nacimiento': fecha_nacimiento.isoformat(),  # En formato ISO 'yyyy-MM-dd'
-                'id_escolaridad': id_escolaridad,
-                'profesion': self.profesion_input.text(),
-                'telefono': self.telefono_input.text(),
-                'celular': self.celular_input.text(),
-                'remision': self.remision_input.text()
-            }
-
-            # Realizar la solicitud al backend para guardar el paciente
-            url = "http://127.0.0.1:5000/paciente/nuevo"
-            response = requests.post(url, json=data)
-
-            # Mostrar mensaje de éxito o error según la respuesta del servidor
-            if response.status_code == 201:
-                QMessageBox.information(self, "Éxito", "Paciente registrado exitosamente.")
-            else:
-                try:
-                    error_message = response.json().get('error', 'Error desconocido')
-                except requests.exceptions.JSONDecodeError:
-                    error_message = f"Error no esperado: {response.text}"
-
-                QMessageBox.warning(self, "Error", f"Error al registrar el paciente: {error_message}")
-
-        except ValueError as ve:
-            QMessageBox.warning(self, "Error de entrada", f"Error en los datos ingresados: {str(ve)}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error inesperado: {str(e)}")
 

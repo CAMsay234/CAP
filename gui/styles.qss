@@ -22,11 +22,19 @@ QPushButton {
     width: 150px;
 }
 
+/* Estilo para los botones azules*/
+QPushButton[blue="true"] {
+    background-color: #005BBB;
+    color: white;
+    border-radius: 10px;
+    padding: 10px;
+}
+
 /* Estilo para los botones de texto sin fondo (como "Olvidaste la contraseña") */
 QPushButton[flat="true"] {
     background-color: none;
     border: none;
-
+    width: 150px;
     color: white;
     text-decoration: underline;
 }
@@ -35,7 +43,7 @@ QPushButton[flat="true"] {
 QLabel {
     color: white;
     font-family: Vogue;
-    font-size: 40px;
+    font-size: 38px;
     font-weight: bold; /* Negrilla */
 }
 
@@ -43,7 +51,7 @@ QLabel {
 QLabel[subtitulo="true"] {
     color: black;
     font-family: Arial;
-    font-size: 20px;
+    font-size: 25px;
     font-weight: normal;
     padding: 5px 0;
 }
