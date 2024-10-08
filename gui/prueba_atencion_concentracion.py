@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QTextEdit, QPushButton
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -51,8 +51,43 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
 
         header_layout.addWidget(header_background)
         main_layout.addLayout(header_layout)
+                # Botón "Volver" en la esquina derecha
+        self.boton_volver = QPushButton("VOLVER")
+        self.boton_volver.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                border: 1px solid #005BBB;
+                border-radius: 5px;
+                color: #005BBB;
+                font-size: 14px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+        self.boton_volver.clicked.connect(self.abrir_evaluacion_neuropsicologica)  # Conectar el botón para volver
+        header_background_layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
+ 
+        # Botón "Guardar" en la esquina derecha
+        self.boton_guardar = QPushButton("GUARDAR")
+        self.boton_guardar.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                border: 1px solid #005BBB;
+                border-radius: 5px;
+                color: #005BBB;
+                font-size: 14px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+        self.boton_guardar.clicked.connect(self.abrir_guardar)  # Conectar el botón para guardar
+        header_background_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
 
-               # Tabla de pruebas
+        # Tabla de pruebas
         table_layout = QGridLayout()
         headers = ["PRUEBAS", "PUNTAJE", "MEDIA", "DS", "INTERPRETACIÓN"]
         tests = [
@@ -72,15 +107,16 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         for row, test in enumerate(tests, start=1):
             # Nombre de la prueba
             test_label = QLabel(test)
-            test_label.setFont(QFont('Arial', 12))
             test_label.setAlignment(Qt.AlignCenter)
+            test_label.setProperty("pruebas", True)
             test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+            test_label.setMinimumWidth(500)
             table_layout.addWidget(test_label, row, 0)
         
             # Campos de entrada para Puntaje, Media, DS, Interpretación
             for col in range(1, 5):
                 input_field = QLineEdit()
-                input_field.setStyleSheet("border-color: black;")
+                input_field.setStyleSheet("border: 1px solid black;")
                 input_field.setFixedHeight(35)
                 table_layout.addWidget(input_field, row, col)
         
@@ -91,6 +127,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         
         # Sección de "Test de Rastreo de Caminos A."
         self.add_section("TEST DE RASTREOS DE CAMINOS A.", ["Tiempo", "Curva de Memoria. Span"], main_layout)
+        
         # Sección de comentarios clínicos
         comentarios_clinicos = [
             "Focalizada: Capacidad para dar respuesta de un modo diferenciado a estímulos sensoriales específicos",
@@ -115,42 +152,68 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         title_label.setFont(QFont('Arial', 14, QFont.Bold))
         title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")
         layout.addWidget(title_label)
-
+    
         section_layout = QGridLayout()
         for i, field in enumerate(fields):
             label = QLabel(field)
             label.setFont(QFont('Arial', 12))
+            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")  # Letra negra y fondo gris
+            label.setProperty("pruebas", True)  # Marcar como campo de entrada
+            label.setMinimumWidth(500)  # Ajustar altura mínima
             section_layout.addWidget(label, i, 0)
-
-            if multiline:
+    
+            # Añadir campos de entrada para Puntaje, Media, DS, Interpretación
+            for col in range(1, 5):
                 input_field = QLineEdit()
-            else:
-                input_field = QLineEdit()
-
-            section_layout.addWidget(input_field, i, 1)
-
+                input_field.setStyleSheet("border: 1px solid black;")
+                input_field.setFixedHeight(35)  # Ajustar altura fija
+                section_layout.addWidget(input_field, i, col)
+    
+        # Añadir un QTextEdit si multiline es True
+        if multiline:
+            text_edit = QTextEdit()
+            text_edit.setFont(QFont('Arial', 12))
+            text_edit.setStyleSheet("border: 1px solid black;")
+            text_edit.setFixedHeight(150)  # Ajustar altura fija
+            layout.addWidget(text_edit)
+    
         layout.addLayout(section_layout)
 
     def add_comment_section(self, title, comments, layout):
         """Añadir sección de comentarios clínicos con múltiples líneas"""
         title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 10, QFont.Bold))  # Letra más pequeña
-        title_label.setStyleSheet("background-color: #d3d3d3; color: black; padding: 5px; border-radius: 5px;")  # Fondo gris claro
+        title_label.setFont(QFont('Arial', 14, QFont.Bold))  # Letra más pequeña
+        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")  # Fondo azul claro y letra blanca
         layout.addWidget(title_label)
     
         comment_layout = QGridLayout()
         for i, comment in enumerate(comments):
             label = QLabel(comment)
-            label.setFont(QFont('Arial', 10))  # Letra más pequeña
+            label.setFont(QFont('Arial', 14)) 
+            label.setProperty("comentarios", True) # Letra más pequeña
+            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")  # Letra negra y fondo gris
             label.setWordWrap(True)  # Asegurar que el texto se envuelva
             comment_layout.addWidget(label, i, 0)
-    
+        
             # Añadir campo de texto asociado al comentario
-            input_field = QLineEdit()
+            input_field = QTextEdit()
+            input_field.setFont(QFont('Arial', 12))
+            input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde a las casillas de comentarios
+            input_field.setFixedHeight(150)  # Ajustar altura fija
             comment_layout.addWidget(input_field, i, 1)
     
         layout.addLayout(comment_layout)
 
+    def abrir_evaluacion_neuropsicologica(self):
+            """Función para abrir la ventana de Evaluación Neuropsicológica."""
+            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la nueva ventana de registro de pacientes
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()  # Crear la ventana de registrar paciente
+            self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
+            self.close()  # Cerrar la ventana actual # Importar la nueva ventana de registro de pacientes
+
+    def abrir_guardar(self):
+        """Función para guardar los datos de la prueba en la base de datos."""
+    pass
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
