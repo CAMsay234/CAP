@@ -4,11 +4,12 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 
 class EvaluacionNeuropsicologicaWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self,paciente_seleccionado):
         super().__init__()
 
+        self.paciente_seleccionado = paciente_seleccionado
         # Configurar la ventana
-        self.setWindowTitle("Evaluación Neuropsicológica")
+        self.setWindowTitle(f"Evaluación Neuropsicológica de {self.paciente_seleccionado['nombre']}")
         self.showMaximized()  # Abrir la ventana maximizada
         self.setStyleSheet("background-color: white;")  # Fondo blanco
 
@@ -32,12 +33,12 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         header_background_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
         # Campos de Código y Nombre del paciente
-        self.label_codigo = QLabel("Código:")
+        self.label_codigo = QLabel(f"Código: {self.paciente_seleccionado['codigo_hc']}")
         self.label_codigo.setFont(QFont('Arial', 14))
         self.input_codigo = QLineEdit()
         self.input_codigo.setFixedWidth(100)
 
-        self.label_nombre = QLabel("Nombre paciente:")
+        self.label_nombre = QLabel(f"Nombre paciente: {self.paciente_seleccionado['nombre']}")
         self.label_nombre.setFont(QFont('Arial', 14))
         self.input_nombre = QLineEdit()
         self.input_nombre.setFixedWidth(300)

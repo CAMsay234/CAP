@@ -234,7 +234,7 @@ class SeleccionarPacienteWindow(QMainWindow):
         if hasattr(self, 'paciente_seleccionado'):
             # Pasar los datos del paciente seleccionado a la nueva ventana
             from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
-            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()#pself.paciente_seleccionado)
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)#pself.paciente_seleccionado)
             self.evaluacion_neuropsicologica_window.show()
             self.close()
 
