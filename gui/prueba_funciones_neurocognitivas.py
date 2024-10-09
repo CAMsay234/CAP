@@ -1,7 +1,11 @@
+import sys
 import os
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QWidget, QSpacerItem, QSizePolicy, QGridLayout, QScrollArea
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit
+)
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
+import sqlite3  # Importar el módulo para trabajar con bases de datos SQLite
 
 
 class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
@@ -13,125 +17,184 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
         self.showMaximized()  # Abrir la ventana maximizada
         self.setStyleSheet("background-color: white;")  # Fondo blanco
 
-        # Scroll Area para contener todo el contenido largo
-        scroll_area = QScrollArea(self)
-        scroll_area.setWidgetResizable(True)
-        scroll_content = QWidget()  # El widget que contendrá todo el layout
-        scroll_layout = QVBoxLayout(scroll_content)
+        # Crear el scroll
+        scroll = QScrollArea(self)
+        scroll_widget = QWidget()
+        scroll.setWidgetResizable(True)
+        main_layout = QVBoxLayout(scroll_widget)
 
-        # Crear la barra azul con el logo y el campo de código
+        # Crear la barra azul con el logo, título y el campo de código
         header_layout = QHBoxLayout()
         header_background = QWidget()
         header_background.setStyleSheet("background-color: #005BBB;")
         header_background_layout = QHBoxLayout(header_background)
-        header_background_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Logo de UPB
+        # Logo UPB
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
         self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.logo.setPixmap(pixmap)
         header_background_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
-        # Título de la sección
-        titulo = QLabel("FUNCIONES NEUROCOGNITIVAS (GNOSIAS Y PRAXIAS)")
-        titulo.setFont(QFont('Arial', 24))  # Tamaño más grande para el título principal
-        titulo.setStyleSheet("color: white;")
-        header_background_layout.addWidget(titulo, alignment=Qt.AlignCenter)
+        # Título
+        self.title = QLabel("FUNCIONES NEUROCOGNITIVAS")
+        self.title.setFont(QFont('Arial', 18, QFont.Bold))
+        self.title.setStyleSheet("color: white;")
+        header_background_layout.addWidget(self.title, alignment=Qt.AlignCenter)
 
         # Campo de código
-        codigo_layout = QVBoxLayout()
-        codigo_label = QLabel("Código:")
-        codigo_label.setFont(QFont('Arial', 10))
-        codigo_label.setStyleSheet("color: white;")
-        codigo_layout.addWidget(codigo_label)
-
-        # Crear el campo de texto de código
+        self.codigo_label = QLabel("Código:")
+        self.codigo_label.setFont(QFont('Arial', 12))
+        self.codigo_label.setStyleSheet("color: white;")
         self.codigo_input = QLineEdit()
         self.codigo_input.setFixedWidth(100)
-        codigo_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
-        header_background_layout.addLayout(codigo_layout)
+        header_background_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
+        header_background_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
 
         header_layout.addWidget(header_background)
-        scroll_layout.addLayout(header_layout)
+        main_layout.addLayout(header_layout)
 
-        # Crear un espaciador debajo de la barra azul
-        scroll_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed))
+        # Botón "Volver" en la esquina derecha
+        self.boton_volver = QPushButton("VOLVER")
+        self.boton_volver.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                border: 1px solid #005BBB;
+                border-radius: 5px;
+                color: #005BBB;
+                font-size: 14px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+        self.boton_volver.clicked.connect(self.abrir_evaluacion_neuropsicologica)  # Conectar el botón para volver
+        header_background_layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
 
-        # Sección de la tabla: DIMENSIÓN NEUROCOGNITIVA - PUNTAJE - INTERPRETACIÓN
-        section_titles = ["DIMENSIÓN NEUROCOGNITIVA", "PUNTAJE", "INTERPRETACIÓN"]
-        neurocognitive_functions = [
-            "ESTEROGNOSIA NÚMEROS", "ESTEROGNOSIA LETRAS", "ESTEROGNOSIA FORMAS",
-            "GRAFESTESIA NÚMEROS", "GRAFESTESIA FORMAS", "DISCRIMINACIÓN AUDITIVA",
-            "PRAXIAS IDEACIONALES", "PRAXIAS IDEOMOTORAS", "PRAXIAS CONSTRUC BIDIMEN.",
-            "PRAXIAS CONSTRUC TRIDIMEN.", "OTRA PRUEBA"
+        # Botón "Guardar" en la esquina derecha
+        self.boton_guardar = QPushButton("GUARDAR")
+        self.boton_guardar.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                border: 1px solid #005BBB;
+                border-radius: 5px;
+                color: #005BBB;
+                font-size: 14px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+        self.boton_guardar.clicked.connect(self.abrir_guardar)  # Conectar el botón para guardar
+        header_background_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
+
+        # Tabla de pruebas para "Escala de Memoria de Wechsler"
+        self.add_table("GNOSIAS Y PRAXIAS", ["Esterognosia números", "Esterognosia letras", "Esterognosia formas", "Grafestesia números", "Grafestesia formas", "Discriminación auditiva", "Praxias ideacionales", "Praxias ideomotoras", "Praxias construccionales bidimensional", "Praxias construccionales tridimensional", "Otra prueba"], main_layout)
+
+        # Sección de comentarios clínicos con celdas para cada comentario
+        comentarios_clinicos = [
+            "Procesos Viso-Perceptuales", "Procesos Viso-Espaciales", "Procesos Viso-Motores"
         ]
+        self.add_comment_section("COMENTARIO CLÍNICO", comentarios_clinicos, main_layout)
 
-        grid_functions = QGridLayout()
-        for i, title in enumerate(section_titles):
-            label = QLabel(title)
-            label.setFont(QFont('Arial', 12, QFont.Bold))
-            grid_functions.addWidget(label, 0, i)
+        # Sección de "Conclusiones Generales" con un solo cuadro grande
+        self.add_conclusion_section("CONCLUSIONES GENERALES", main_layout)
 
-        for row, function in enumerate(neurocognitive_functions, start=1):
-            function_label = QLabel(function)
-            function_label.setFont(QFont('Arial', 10))
-            grid_functions.addWidget(function_label, row, 0)
+        # Configurar el scroll y añadir el widget principal
+        scroll.setWidget(scroll_widget)
+        self.setCentralWidget(scroll)
 
-            # Crear campos de texto para "PUNTAJE" y "INTERPRETACIÓN"
-            for col in range(1, 3):
-                input_field = QLineEdit()
-                input_field.setFixedHeight(30)
-                grid_functions.addWidget(input_field, row, col)
+    def abrir_evaluacion_neuropsicologica(self):
+        """Función para abrir la ventana de Evaluación Neuropsicológica."""
+        from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la nueva ventana de registro de pacientes
+        self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()  # Crear la ventana de registrar paciente
+        self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
+        self.close()  # Cerrar la ventana actual
 
-        scroll_layout.addLayout(grid_functions)
+    def abrir_guardar(self):
+        """Función para guardar los datos de la prueba en la base de datos."""
+        pass
 
-        # Sección "Comentario Clínico"
-        self.add_title("COMENTARIO CLÍNICO", scroll_layout)
-        clinical_comments = [
-            "PROCESOS VISO-PERCEPTUALES", "PROCESOS VISO-ESPACIALES", "PROCESOS VISO-MOTORES"
-        ]
-        self.add_comment_section(clinical_comments, scroll_layout)
-
-        # Sección "Conclusiones Generales"
-        self.add_title("CONCLUSIONES GENERALES", scroll_layout)
-        conclusions_input = QLineEdit()
-        conclusions_input.setFixedHeight(40)
-        scroll_layout.addWidget(conclusions_input)
-
-        # Configurar el widget principal para el scroll y añadir todo el layout
-        scroll_area.setWidget(scroll_content)
-        self.setCentralWidget(scroll_area)
-
-    def add_title(self, title, layout):
-        """Función para añadir títulos a cada sección."""
+    def add_table(self, title, tests, layout):
+        """Función para agregar una tabla con los datos de las pruebas."""
         title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 14, QFont.Bold))
-        title_label.setStyleSheet("background-color: #B0C4DE; padding: 10px;")
+        title_label.setFont(QFont('Arial', 16, QFont.Bold))
+        title_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
         layout.addWidget(title_label)
 
-    def add_comment_section(self, comments, layout):
-        """Añadir comentarios clínicos en la sección de comentarios."""
-        grid = QGridLayout()
+        table_layout = QGridLayout()
+        headers = ["DIMENSIÓN NEUROCOGNITIVA", "PUNTAJE", "INTERPRETACIÓN"]
+
+        # Agregar encabezados a la tabla
+        for col, header in enumerate(headers):
+            header_label = QLabel(header)
+            header_label.setFont(QFont('Arial', 14, QFont.Bold))
+            header_label.setStyleSheet("color: white; background-color: #4A90E2; padding: 10px; border-radius: 5px;")
+            header_label.setAlignment(Qt.AlignCenter)
+            table_layout.addWidget(header_label, 0, col)
+
+        # Agregar filas de pruebas
+        for row, test in enumerate(tests, start=1):
+            # Nombre de la prueba
+            test_label = QLabel(test)
+            test_label.setProperty("pruebas", True)
+            test_label.setAlignment(Qt.AlignCenter)
+            test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+            table_layout.addWidget(test_label, row, 0)
+
+            # Campos de entrada para Puntaje, Media, DS, Interpretación
+            for col in range(1, 3):
+                input_field = QLineEdit()
+                input_field.setFixedHeight(35)
+                input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde
+                table_layout.addWidget(input_field, row, col)
+
+        layout.addLayout(table_layout)
+
+    def add_conclusion_section(self, title, layout):
+        """Función para agregar la sección de conclusiones generales con un solo recuadro grande."""
+        title_label = QLabel(title)
+        title_label.setFont(QFont('Arial', 14, QFont.Bold))
+        title_label.setStyleSheet("color: white; background-color: #6A9DE2; padding: 10px;")
+        layout.addWidget(title_label)
+
+        # Recuadro grande para la sección de "Conclusiones Generales"
+        conclusion_field = QLineEdit()
+        conclusion_field.setFixedHeight(100)  # Ajustar el tamaño para que sea un cuadro grande
+        conclusion_field.setStyleSheet("border: 1px solid black;")
+        layout.addWidget(conclusion_field)
+
+    def add_comment_section(self, title, comments, layout):
+        """Añadir sección de comentarios clínicos con múltiples líneas"""
+        title_label = QLabel(title)
+        title_label.setFont(QFont('Arial', 14, QFont.Bold))  # Letra más pequeña
+        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")  # Fondo azul claro y letra blanca
+        layout.addWidget(title_label)
+
+        comment_layout = QGridLayout()
         for i, comment in enumerate(comments):
             label = QLabel(comment)
-            grid.addWidget(label, i, 0)
+            label.setFont(QFont('Arial', 14)) 
+            label.setProperty("comentarios", True) # Letra más pequeña
+            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")  # Letra negra y fondo gris
+            label.setWordWrap(True)  # Asegurar que el texto se envuelva
+            comment_layout.addWidget(label, i, 0)
 
-            # Campo de texto al lado de cada comentario
-            input_field = QLineEdit()
-            input_field.setFixedHeight(30)
-            grid.addWidget(input_field, i, 1)
+            # Añadir campo de texto asociado al comentario
+            input_field = QTextEdit()
+            input_field.setFont(QFont('Arial', 12))
+            input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde a las casillas de comentarios
+            input_field.setFixedHeight(100)  # Ajustar altura fija
+            comment_layout.addWidget(input_field, i, 1)
 
-        layout.addLayout(grid)
+        layout.addLayout(comment_layout)
 
-
-# Ejecutar la aplicación
-if __name__ == '__main__':
-    import sys
-    from PyQt5.QtWidgets import QApplication
+# Función para ejecutar la aplicación
+if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ventana = PruebaFuncionesNeurocognitivasWindow()
-    ventana.show()
+    window = PruebaFuncionesNeurocognitivasWindow()
+    window.show()
     sys.exit(app.exec_())
-
 

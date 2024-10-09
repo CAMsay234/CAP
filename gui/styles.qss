@@ -50,10 +50,24 @@ QLabel {
 /* Estilo para los subtítulos o descripciones secundarias */
 QLabel[subtitulo="true"] {
     color: black;
-    font-family: Arial;
-    font-size: 25px;
+    font-family: Vogue;
+    font-size: 20px;
     font-weight: normal;
     padding: 5px 0;
 }
 
+QLabel[pruebas="true"] {
+    color: black;
+    font-family: Vogue;
+    font-size: 35px;
+    font-weight: normal;
+    padding: 5px 0;
+}
 
+QLabel[comentarios="true"] {
+    color: black;
+    font-family: Vogue;
+    font-size: 30px;
+    font-weight: normal;
+    padding: 5px 0;
+}
