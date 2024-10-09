@@ -72,6 +72,7 @@ def crear_paciente():
 
     # Devolver los datos del paciente creado
     return jsonify({
+        "codigo_hc": nuevo_paciente.codigo_hc,
         "documento": nuevo_paciente.documento,
         "nombre": nuevo_paciente.nombre,
         "edad": nuevo_paciente.edad,
