@@ -216,10 +216,11 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         self.close()
 
     def abrir_ventana_historia_clinica(self):
-        from historia_clinica import HistoriaClinicaWindow
-        self.ventana_historia = HistoriaClinicaWindow()
-        self.ventana_historia.show()
-        self.close()
+          if hasattr(self, 'paciente_seleccionado'):
+            from historia_clinica import HistoriaClinicaWindow
+            self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)
+            self.historia_clinica_window.show()
+            self.close()
 
     def abrir_ventana_atencion_concentracion(self):
         from prueba_atencion_concentracion import PruebaAtencionConcentracionWindow
@@ -264,6 +265,7 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         self.close()
 
 
+      
 # Ejecutar la aplicación
 if __name__ == '__main__':
     import sys
