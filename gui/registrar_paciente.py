@@ -172,7 +172,7 @@ class RegistrarPacienteWindow(QMainWindow):
         buttons_layout.addWidget(self.boton_guardar, alignment=Qt.AlignCenter)
 
         # Conectar el botón "Guardar datos personales" con la función para guardar el paciente y abrir la ventana de evaluación
-        self.boton_guardar.clicked.connect(self.guardar_y_abrir_evaluacion)
+        self.boton_guardar.clicked.connect(self.guardar_paciente)
 
         self.boton_continuar = QPushButton("Continuar historia clínica")
         self.boton_continuar.setStyleSheet("""
@@ -227,11 +227,44 @@ class RegistrarPacienteWindow(QMainWindow):
             print(f"Error de conexión: {str(e)}")
             return "Error"
         
+    def guardar_paciente(self):
+        # Obtener los datos del paciente desde los campos de entrada
+        data = {
+            "documento": self.documento_input.text(),
+            "nombre": self.nombre_input.text(),
+            "edad": int(self.edad_input.text()),
+            "fecha_nacimiento": self.fecha_nacimiento_input.date().toString("yyyy-MM-dd"),
+            "id_escolaridad": self.escolaridad_combo.currentData(),  # Obtener el ID asociado al nivel de escolaridad
+            "profesion": self.profesion_input.text(),
+            "telefono": self.telefono_input.text(),
+            "celular": self.celular_input.text(),
+            "remision": self.remision_input.text()
+        }
+    
+        # Realizar la solicitud POST para guardar el paciente
+        response = requests.post('http://localhost:5000/paciente/nuevo', json=data)
+        if response.status_code == 201:
+            QMessageBox.information(self, "Éxito", "Paciente guardado correctamente.")
+            paciente = response.json()
+            print(paciente)  # Imprimir la respuesta de la API
+            self.paciente_seleccionado = paciente
+            self.guardar_y_abrir_evaluacion()
+        else:
+            QMessageBox.critical(self, "Error", "Error al guardar el paciente.")
+
     def guardar_y_abrir_evaluacion(self):
-            """Cierra la ventana actual y abre la ventana SeleccionarPacienteWindow."""
-            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la ventana de selección de paciente
-            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()  # Crear la ventana de selección de paciente
-            self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de selección de paciente
-            self.close()  # Cerrar la ventana actual
+        """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
+        if hasattr(self, 'paciente_seleccionado'):
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)  # Crear la ventana de evaluación neuropsicológica
+            self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de evaluación neuropsicológica
+            self.close()
 
+# Ejemplo de cómo llamar a la clase
+if __name__ == "__main__":
+    from PyQt5.QtWidgets import QApplication
+    import sys
 
+    app = QApplication(sys.argv)
+    window = RegistrarPacienteWindow()
+    window.show()
+    sys.exit(app.exec_())

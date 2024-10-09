@@ -70,7 +70,18 @@ def crear_paciente():
     db.session.add(nuevo_paciente)
     db.session.commit()
 
-    return jsonify({"mensaje": "Paciente creado exitosamente."}), 201
+    # Devolver los datos del paciente creado
+    return jsonify({
+        "documento": nuevo_paciente.documento,
+        "nombre": nuevo_paciente.nombre,
+        "edad": nuevo_paciente.edad,
+        "fecha_nacimiento": nuevo_paciente.fecha_nacimiento.strftime('%Y-%m-%d'),
+        "id_escolaridad": nuevo_paciente.id_escolaridad,
+        "profesion": nuevo_paciente.profesion,
+        "telefono": nuevo_paciente.telefono,
+        "celular": nuevo_paciente.celular,
+        "remision": nuevo_paciente.remision
+    }), 201
 
 # Ruta para obtener los detalles de un paciente específico
 @pacientes_bp.route('/paciente', methods=['GET'])
