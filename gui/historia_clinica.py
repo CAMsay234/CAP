@@ -1,8 +1,11 @@
 import sys
 import os
+import requests
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
+from areas import AreasWindow
+from estado_mental import EstadoMentalWindow
 
 class HistoriaClinicaWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
@@ -99,6 +102,7 @@ class HistoriaClinicaWindow(QMainWindow):
         for label, placeholder in campos:
             label_widget = QLabel(f"{label}:")
             label_widget.setFont(QFont('Arial', 18))
+            label_widget.setStyleSheet("color:black;")
             input_widget = QTextEdit()  # Cambiado a QTextEdit
             input_widget.setPlaceholderText(placeholder)
             input_widget.setFont(QFont('Arial', 12))
@@ -181,13 +185,7 @@ class HistoriaClinicaWindow(QMainWindow):
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
-    def abrir_estado_mental(self):
-        dialog = EstadoMentalDialog(self)
-        dialog.exec_()
 
-    def abrir_areas(self):
-        dialog = AreasDialog(self)
-        dialog.exec_()
 
     def volver_a_seleccionar_registrar(self):
         # Ir a la ventana de seleccionar_registrar_paciente.py
@@ -196,26 +194,19 @@ class HistoriaClinicaWindow(QMainWindow):
         self.seleccionar_registrar_window.show()
         self.close()  # Cerrar la ventana actual
 
+    def abrir_estado_mental(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            self.estado_mental = EstadoMentalWindow(self.paciente_seleccionado)
+            self.estado_mental.show()
 
-# Ventanas emergentes (diálogos) para Estado Mental y Áreas
-class EstadoMentalDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Estado Mental")
-        self.setFixedSize(400, 300)
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Ingrese los detalles del estado mental"))
-        self.setLayout(layout)
 
-class AreasDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Áreas")
-        self.setFixedSize(400, 300)
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Ingrese los detalles de las áreas"))
-        self.setLayout(layout)
-
+    def abrir_areas(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            self.areas = AreasWindow(self.paciente_seleccionado)
+            self.areas.show()
+    
+    
+    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     paciente = {'codigo_hc': 1, 'nombre': 'Camilo Velasquez'}

@@ -1,5 +1,6 @@
 import sys
 import os
+import requests
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QTextEdit, QPushButton
 )
@@ -84,7 +85,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 background-color: #e0e0e0;
             }
         """)
-        self.boton_guardar.clicked.connect(self.abrir_guardar)  # Conectar el botón para guardar
+        self.boton_guardar.clicked.connect(self.guardar_prueba)  # Conectar el botón para guardar
         header_background_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
 
         # Tabla de pruebas
@@ -211,9 +212,106 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
             self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
             self.close()  # Cerrar la ventana actual # Importar la nueva ventana de registro de pacientes
 
-    def abrir_guardar(self):
-        """Función para guardar los datos de la prueba en la base de datos."""
-    pass
+    def guardar_prueba(self):
+        # Obtener el nombre de la prueba desde el título de la ventana
+        prueba_nombre = self.windowTitle().replace("Prueba ", "")
+
+        # Obtener el ID de la prueba desde la API
+        response = requests.get(f'http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'] == prueba_nombre), None)
+        if prueba_id is None:
+            print("Prueba no encontrada en la base de datos.")
+            return
+
+        # Recorrer cada fila de tests y obtener sus valores
+        for row in range(1, self.table_layout.rowCount()):
+            test_nombre = self.table_layout.itemAtPosition(row, 0).widget().text()
+            puntaje = self.table_layout.itemAtPosition(row, 1).widget().text()
+            media = self.table_layout.itemAtPosition(row, 2).widget().text()
+            ds = self.table_layout.itemAtPosition(row, 3).widget().text()
+            interpretacion = self.table_layout.itemAtPosition(row, 4).widget().text()
+
+            # Obtener el ID de la subprueba desde la API
+            response = requests.get(f'http://localhost:5000/subpruebas')
+            if response.status_code != 200:
+                print("Error al obtener las subpruebas")
+                continue
+
+            subpruebas = response.json()
+            subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'] == test_nombre), None)
+            if subprueba_id is None:
+                print(f"Subprueba '{test_nombre}' no encontrada en la base de datos.")
+                continue
+
+            # Guardar los datos en la base de datos
+            data = {
+                "prueba_id": prueba_id,
+                "subprueba_id": subprueba_id,
+                "puntaje": puntaje,
+                "media": media,
+                "ds": ds,
+                "interpretacion": interpretacion
+            }
+            response = requests.post('http://localhost:5000/resultados', json=data)
+            if response.status_code != 201:
+                print(f"Error al guardar los resultados para la subprueba '{test_nombre}'")
+
+        print("Datos guardados exitosamente")
+
+    def guardar_comentarios(self):
+        # Obtener el nombre de la prueba desde el título de la ventana
+        prueba_nombre = self.windowTitle().replace("Prueba ", "")
+
+        # Obtener el ID de la prueba desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'] == prueba_nombre), None)
+        if prueba_id is None:
+            print("Prueba no encontrada en la base de datos.")
+            return
+
+        # Recorrer cada comentario y obtener sus valores
+        for i in range(self.comment_layout.rowCount()):
+            comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()
+            comment_text = self.comment_layout.itemAtPosition(i, 1).widget().toPlainText()
+
+            # Guardar los comentarios en la base de datos
+            data = {
+                "codigo_hc": self.codigo_input.text(),  # Asumiendo que tienes un campo de código de historia clínica
+                "id_prueba": prueba_id,
+                "tipo_comentario": comment_label,
+                "comentario": comment_text
+            }
+            response = requests.post('http://localhost:5000/comentarios', json=data)
+            if response.status_code != 201:
+                print(f"Error al guardar el comentario '{comment_label}'")
+
+        # Guardar la conclusión como un comentario adicional
+        conclusion_text = self.conclusion_text_edit.toPlainText()  # Asumiendo que tienes un QTextEdit para la conclusión
+        data = {
+            "codigo_hc": self.codigo_input.text(),
+            "id_prueba": prueba_id,
+            "tipo_comentario": "Conclusión",
+            "comentario": conclusion_text
+        }
+        response = requests.post('http://localhost:5000/comentarios', json=data)
+        if response.status_code != 201:
+            print("Error al guardar la conclusión")
+
+        print("Comentarios y conclusión guardados exitosamente")
+
+    def guardar_todo(self):
+        self.guardar_prueba()
+        self.guardar_comentarios()
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
