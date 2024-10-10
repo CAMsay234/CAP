@@ -9,27 +9,19 @@ evaluaciones_bp = Blueprint('evaluaciones', __name__)
 @evaluaciones_bp.route('/evaluaciones', methods=['POST'])
 def crear_evaluacion():
     data = request.get_json()  # Obtener los datos en formato JSON
-    codigo_hc = data.get('codigo_hc')
-    id_prueba = data.get('id_prueba')
-    id_subprueba = data.get('id_subprueba')
-    puntaje = data.get('puntaje')
-    media = data.get('media')
-    desviacion_estandar = data.get('desviacion_estandar')
-    interpretacion = data.get('interpretacion')
-
-    if not codigo_hc or not id_prueba or not id_subprueba or not puntaje or not media or not desviacion_estandar or not interpretacion:
-        return jsonify({"error": "Todos los campos son obligatorios"}), 400
-
+    if not data["codigo_hc"] or not data["id_prueba"] or not data["id_subprueba"] or not data["puntaje"] or not data["media"] or not data["desviacion_estandar"] or not data["interpretacion"]:
+            return jsonify({"error": "Todos los campos son obligatorios"}), 400
     nueva_evaluacion = EvaluacionNeuropsicologica(
-        codigo_hc=codigo_hc,
-        id_prueba=id_prueba,
-        id_subprueba=id_subprueba,
-        puntaje=puntaje,
-        media=media,
-        desviacion_estandar=desviacion_estandar,
-        interpretacion=interpretacion
+        codigo_hc=data["codigo_hc"],
+        id_prueba=data["id_prueba"],
+        id_subprueba=data["id_subprueba"],
+        puntaje=data["puntaje"],
+        media=data["media"],
+        desviacion_estandar=data["desviacion_estandar"],
+        interpretacion=data["interpretacion"]
     )
-
+    
+    
     try:
         db.session.add(nueva_evaluacion)
         db.session.commit()

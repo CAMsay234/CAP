@@ -224,7 +224,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
 
         # Obtener el ID de la prueba desde la API
-        response = requests.get(f'http://localhost:5000/pruebas')
+        response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas")
             return
@@ -232,21 +232,26 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         pruebas = response.json()
         prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
         if prueba_id is None:
-            print("Prueba no encontrada en la base de datos.")
+            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
             return
 
         # Recorrer cada fila de tests y obtener sus valores
         for row in range(1, self.table_layout.rowCount()):
             test_nombre = self.table_layout.itemAtPosition(row, 0).widget().text()
-            puntaje = self.table_layout.itemAtPosition(row, 1).widget().text()
-            media = self.table_layout.itemAtPosition(row, 2).widget().text()
-            ds = self.table_layout.itemAtPosition(row, 3).widget().text()
-            interpretacion = self.table_layout.itemAtPosition(row, 4).widget().text()
+            puntaje = self.table_layout.itemAtPosition(row, 1).widget().text().strip()
+            media = self.table_layout.itemAtPosition(row, 2).widget().text().strip()
+            ds = self.table_layout.itemAtPosition(row, 3).widget().text().strip()
+            interpretacion = self.table_layout.itemAtPosition(row, 4).widget().text().strip()
+
+            # Verificar que todos los campos estén completos
+            if not all([puntaje, media, ds, interpretacion]):
+                print(f"Faltan datos para la subprueba '{test_nombre}'.")
+                continue
 
             # Obtener el ID de la subprueba desde la API usando el ID de la prueba
             response = requests.get(f'http://localhost:5000/subpruebas')
             if response.status_code != 200:
-                print("Error al obtener las subpruebas")
+                print(f"Error al obtener las subpruebas para la prueba '{test_nombre}'.")
                 continue
 
             subpruebas = response.json()
@@ -255,7 +260,10 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 print(f"Subprueba '{test_nombre}' no encontrada en la base de datos.")
                 continue
 
-            # Guardar los datos en la base de datos
+            # Verificar si ya existe una evaluación para esta combinación de valores
+            check_url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}"
+            response = requests.get(check_url)
+
             data = {
                 "codigo_hc": self.paciente_seleccionado['codigo_hc'],
                 "id_prueba": prueba_id,
@@ -265,11 +273,25 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 "desviacion_estandar": ds,
                 "interpretacion": interpretacion
             }
-            response = requests.post('http://localhost:5000/evaluaciones', json=data)
-            if response.status_code != 201:
-                print(f"Error al guardar los resultados para la subprueba '{test_nombre}'")
 
-        print("Datos guardados exitosamente")
+            if response.status_code == 404:
+                # No existe, realizar un INSERT
+                response = requests.post('http://localhost:5000/evaluaciones', json=data)
+                if response.status_code == 201:
+                    print(f"Resultados guardados exitosamente para la subprueba '{test_nombre}'.")
+                else:
+                    print(f"Error al guardar los resultados para la subprueba '{test_nombre}': {response.status_code} - {response.text}")
+            elif response.status_code == 200:
+                # Ya existe, realizar un UPDATE
+                response = requests.put(check_url, json=data)
+                if response.status_code == 200:
+                    print(f"Resultados actualizados exitosamente para la subprueba '{test_nombre}'.")
+                else:
+                    print(f"Error al actualizar los resultados para la subprueba '{test_nombre}': {response.status_code} - {response.text}")
+            else:
+                print(f"Error al verificar la evaluación para la subprueba '{test_nombre}': {response.status_code} - {response.text}")
+
+
 
     def guardar_comentarios(self):
         # Obtener el nombre de la prueba desde el título de la ventana
