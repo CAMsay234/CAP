@@ -43,7 +43,7 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
         header_background_layout.addWidget(self.title, alignment=Qt.AlignCenter)
 
         # Campo de código
-        self.codigo_label = QLabel("Código:")
+        self.codigo_label = QLabel(f"Código:{self.paciente_seleccionado['codigo_hc']}")
         self.codigo_label.setFont(QFont('Arial', 12))
         self.codigo_label.setStyleSheet("color: white;")
         self.codigo_input = QLineEdit()
@@ -107,11 +107,12 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
         self.setCentralWidget(scroll)
 
     def abrir_evaluacion_neuropsicologica(self):
-        """Función para abrir la ventana de Evaluación Neuropsicológica."""
-        from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la nueva ventana de registro de pacientes
-        self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow()  # Crear la ventana de registrar paciente
-        self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
-        self.close()  # Cerrar la ventana actual
+        if hasattr(self, 'paciente_seleccionado'):
+            """Función para abrir la ventana de Evaluación Neuropsicológica."""
+            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la nueva ventana de registro de pacientes
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)  # Crear la ventana de registrar paciente
+            self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
+            self.close()  # Cerrar la ventana actual
 
     def abrir_guardar(self):
         """Función para guardar los datos de la prueba en la base de datos."""
