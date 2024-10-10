@@ -1,7 +1,7 @@
 import sys
 import os
 import requests
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog, QApplication
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog, QApplication, QMessageBox
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 from areas import AreasWindow
@@ -90,16 +90,15 @@ class HistoriaClinicaWindow(QMainWindow):
         scroll_layout = QFormLayout(scroll_content)
 
         # Campos del formulario con borde y en QTextEdit
-        campos = [
-            ("Motivo de consulta", "Ingrese el motivo de consulta del paciente"),
-            ("Estado actual", "Describa el estado actual del paciente"),
-            ("Historia médica y psiquiátrica anterior", "Ingrese la historia médica y psiquiátrica anterior"),
-            ("Antecedentes psiquiátricos familiares", "Ingrese antecedentes psiquiátricos familiares"),
-            ("Historia personal", "Ingrese la historia personal del paciente"),
-            ("Historia de la dinámica familiar", "Ingrese la historia de la dinámica familiar")
-        ]
+        self.campos = {
+            "motivo_consulta": ("Motivo de consulta", "Ingrese el motivo de consulta del paciente"),
+            "estado_actual": ("Estado actual", "Describa el estado actual del paciente"),
+            "antecedentes": ("Antecedentes psiquiátricos familiares", "Ingrese antecedentes psiquiátricos familiares"),
+            "historial_personal": ("Historia personal", "Ingrese la historia personal del paciente"),
+            "historial_familiar": ("Historia de la dinámica familiar", "Ingrese la historia de la dinámica familiar")
+        }
 
-        for label, placeholder in campos:
+        for key, (label, placeholder) in self.campos.items():
             label_widget = QLabel(f"{label}:")
             label_widget.setFont(QFont('Arial', 18))
             label_widget.setStyleSheet("color:black;")
@@ -113,6 +112,7 @@ class HistoriaClinicaWindow(QMainWindow):
                     height: 100px;  /* Aumenta la altura para permitir múltiples líneas */
                 }
             """)
+            setattr(self, key, input_widget)
             scroll_layout.addRow(label_widget, input_widget)
 
         scroll.setWidget(scroll_content)
@@ -161,7 +161,7 @@ class HistoriaClinicaWindow(QMainWindow):
         button_layout.addLayout(sub_buttons_layout)
 
         # Botón para guardar historia clínica
-        boton_guardar = QPushButton("Guardar historia clínica")
+        boton_guardar = QPushButton("Actualizar historia clínica")
         boton_guardar.setFont(QFont('Arial', 16))
         boton_guardar.setStyleSheet("""
             QPushButton {
@@ -176,6 +176,7 @@ class HistoriaClinicaWindow(QMainWindow):
             }
         """)
         button_layout.addWidget(boton_guardar, alignment=Qt.AlignCenter)
+        boton_guardar.clicked.connect(self.guardar_historia_clinica)
 
         # Añadir el layout de botones al layout principal
         main_layout.addLayout(button_layout)
@@ -185,7 +186,8 @@ class HistoriaClinicaWindow(QMainWindow):
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
-
+        # Llamar a la función verificar_datos_historia_clinica para cargar los datos al abrir la ventana
+        self.verificar_datos_historia_clinica()
 
     def volver_a_seleccionar_registrar(self):
         # Ir a la ventana de seleccionar_registrar_paciente.py
@@ -199,14 +201,213 @@ class HistoriaClinicaWindow(QMainWindow):
             self.estado_mental = EstadoMentalWindow(self.paciente_seleccionado)
             self.estado_mental.show()
 
-
     def abrir_areas(self):
         if hasattr(self, 'paciente_seleccionado'):
             self.areas = AreasWindow(self.paciente_seleccionado)
             self.areas.show()
-    
-    
-    
+
+    def verificar_datos_historia_clinica(self):
+        """Función para verificar si hay datos de la historia clínica y cargarlos si existen."""
+        try:
+            # Realizar la solicitud GET al backend
+            url = f"http://localhost:5000/historias/{self.paciente_seleccionado['codigo_hc']}"
+            response = requests.get(url)
+            
+            if response.status_code == 200:
+                historia_clinica = response.json()
+                
+                # Llenar los campos de texto con los datos obtenidos
+                self.motivo_consulta.setPlainText(historia_clinica.get('motivo_consulta', ''))
+                self.estado_actual.setPlainText(historia_clinica.get('estado_actual', ''))
+                self.antecedentes.setPlainText(historia_clinica.get('antecedentes', ''))
+                self.historial_personal.setPlainText(historia_clinica.get('historial_personal', ''))
+                self.historial_familiar.setPlainText(historia_clinica.get('historial_familiar', ''))
+            
+            elif response.status_code == 404:
+                # No hay datos de historia clínica, permitir registrar nuevos datos
+                pass
+            
+            else:
+                # Mostrar ventana de error si hay un problema con la solicitud
+                error_msg = QMessageBox()
+                error_msg.setIcon(QMessageBox.Critical)
+                error_msg.setWindowTitle("Error")
+                error_msg.setText("Error al verificar la historia clínica")
+                error_msg.setInformativeText("Por favor, asegúrese de que los datos del paciente sean correctos.")
+                error_msg.setDetailedText(f"Status Code: {response.status_code}, Error: {response.text}")
+                error_msg.setStandardButtons(QMessageBox.Ok)
+                error_msg.exec_()
+
+        except requests.exceptions.RequestException as e:
+            # Mostrar ventana de error si hay problemas de conexión
+            error_msg = QMessageBox()
+            error_msg.setIcon(QMessageBox.Critical)
+            error_msg.setWindowTitle("Error de Conexión")
+            error_msg.setText("No se pudo conectar con el servidor")
+            error_msg.setInformativeText("Revise su conexión a internet o intente más tarde.")
+            error_msg.setDetailedText(str(e))
+            error_msg.setStandardButtons(QMessageBox.Ok)
+            error_msg.exec_()
+ 
+    def guardar_historia_clinica(self):
+        try:
+            # Validar que todos los campos de la historia clínica estén llenos
+            if not self.motivo_consulta.toPlainText() or not self.estado_actual.toPlainText() or not self.antecedentes.toPlainText() or not self.historial_personal.toPlainText() or not self.historial_familiar.toPlainText():
+                raise ValueError("Todos los campos obligatorios deben estar completos.")
+
+            # Obtener los datos de la historia clínica desde los campos de entrada
+            data = {
+                "codigo_hc": self.paciente_seleccionado['codigo_hc'],
+                "documento_paciente": self.paciente_seleccionado['documento'],
+                "motivo_consulta": self.motivo_consulta.toPlainText(),
+                "estado_actual": self.estado_actual.toPlainText(),
+                "antecedentes": self.antecedentes.toPlainText(),
+                "historial_personal": self.historial_personal.toPlainText(),
+                "historial_familiar": self.historial_familiar.toPlainText()
+            }
+
+            # Realizar la solicitud POST para guardar la historia clínica
+            response = requests.post('http://localhost:5000/historias', json=data)
+            
+            if response.status_code == 201:
+                # Mostrar mensaje de éxito
+                success_msg = QMessageBox()
+                success_msg.setIcon(QMessageBox.Information)  # Icono de información para éxito
+                success_msg.setWindowTitle("Éxito")
+                success_msg.setText("Historia clínica guardada correctamente.")
+                success_msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #f8f8f8;
+                        font-size: 10px;
+                    }
+                    QLabel {
+                        font-size: 12px;
+                        color: #333333;
+                    }
+                    QPushButton {
+                        background-color: #005BBB;
+                        font-size: 10px;
+                        color: white;
+                        padding: 2px;
+                        border-radius: 2px;
+                    }
+                    QPushButton:hover {
+                        background-color: #004C99;
+                    }
+                """)
+                success_msg.exec_()
+            else:
+                # Mostrar mensaje de error si la respuesta no fue exitosa
+                error_msg = QMessageBox()
+                error_msg.setIcon(QMessageBox.Critical)
+                error_msg.setWindowTitle("Error")
+                error_msg.setText(f"Error al guardar la historia clínica. Código: {response.status_code}")
+                error_msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #f8f8f8;
+                        font-size: 10px;
+                    }
+                    QLabel {
+                        font-size: 12px;
+                        color: #333333;
+                    }
+                    QPushButton {
+                        background-color: #005BBB;
+                        font-size: 10px;
+                        color: white;
+                        padding: 2px;
+                        border-radius: 2px;
+                    }
+                    QPushButton:hover {
+                        background-color: #004C99;
+                    }
+                """)
+                error_msg.exec_()
+
+        except ValueError as ve:
+            # Mostrar mensaje de advertencia si hay algún campo vacío
+            warning_msg = QMessageBox()
+            warning_msg.setIcon(QMessageBox.Warning)
+            warning_msg.setWindowTitle("Advertencia")
+            warning_msg.setText(str(ve))
+            warning_msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f8f8f8;
+                    font-size: 10px;
+                }
+                QLabel {
+                    font-size: 12px;
+                    color: #333333;
+                }
+                QPushButton {
+                    background-color: #005BBB;
+                    font-size: 10px;
+                    color: white;
+                    padding: 2px;
+                    border-radius: 2px;
+                }
+                QPushButton:hover {
+                    background-color: #004C99;
+                }
+            """)
+            warning_msg.exec_()
+
+        except requests.exceptions.RequestException as re:
+            # Mostrar ventana de error si hubo un problema con la conexión al servidor
+            error_msg = QMessageBox()
+            error_msg.setIcon(QMessageBox.Critical)
+            error_msg.setWindowTitle("Error de conexión")
+            error_msg.setText(f"No se pudo conectar con el servidor. Detalles: {str(re)}")
+            error_msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f8f8f8;
+                    font-size: 10px;
+                }
+                QLabel {
+                    font-size: 12px;
+                    color: #333333;
+                }
+                QPushButton {
+                    background-color: #005BBB;
+                    font-size: 10px;
+                    color: white;
+                    padding: 2px;
+                    border-radius: 2px;
+                }
+                QPushButton:hover {
+                    background-color: #004C99;
+                }
+            """)
+            error_msg.exec_()
+
+        except Exception as e:
+            # Mostrar ventana de error si ocurrió un error inesperado
+            error_msg = QMessageBox()
+            error_msg.setIcon(QMessageBox.Critical)
+            error_msg.setWindowTitle("Error inesperado")
+            error_msg.setText(f"Ocurrió un error inesperado: {str(e)}")
+            error_msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f8f8f8;
+                    font-size: 10px;
+                }
+                QLabel {
+                    font-size: 12px;
+                    color: #333333;
+                }
+                QPushButton {
+                    background-color: #005BBB;
+                    font-size: 10px;
+                    color: white;
+                    padding: 2px;
+                    border-radius: 2px;
+                }
+                QPushButton:hover {
+                    background-color: #004C99;
+                }
+            """)
+            error_msg.exec_()
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     paciente = {'codigo_hc': 1, 'nombre': 'Camilo Velasquez'}
