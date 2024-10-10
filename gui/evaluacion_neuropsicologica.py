@@ -4,7 +4,7 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 
 class EvaluacionNeuropsicologicaWindow(QMainWindow):
-    def __init__(self,paciente_seleccionado):
+    def __init__(self, paciente_seleccionado):
         super().__init__()
 
         self.paciente_seleccionado = paciente_seleccionado
@@ -145,7 +145,7 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             "CAPACIDAD INTELECTUAL": (2, 1),  # Mover "CAPACIDAD INTELECTUAL" debajo de "PROCESOS DE MEMORIA"
         }
 
-# Añadimos los botones al grid usando las posiciones especificadas
+        # Añadimos los botones al grid usando las posiciones especificadas
         for button_name, position in positions.items():
             button = QPushButton(button_name)
             button.setStyleSheet(button_style)
@@ -216,63 +216,75 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         self.close()
 
     def abrir_ventana_historia_clinica(self):
-          if hasattr(self, 'paciente_seleccionado'):
+        if hasattr(self, 'paciente_seleccionado'):
             from historia_clinica import HistoriaClinicaWindow
             self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)
             self.historia_clinica_window.show()
             self.close()
 
     def abrir_ventana_atencion_concentracion(self):
-        from prueba_atencion_concentracion import PruebaAtencionConcentracionWindow
-        self.ventana_atencion = PruebaAtencionConcentracionWindow()
-        self.ventana_atencion.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_atencion_concentracion import PruebaAtencionConcentracionWindow
+            self.ventana_atencion = PruebaAtencionConcentracionWindow(self.paciente_seleccionado)
+            self.ventana_atencion.show()
+            self.close()
 
     def abrir_ventana_procesos_perceptuales(self):
-        from prueba_procesos_perceptuales import PruebaProcesosPerceptualesWindow
-        self.ventana_procesos = PruebaProcesosPerceptualesWindow()
-        self.ventana_procesos.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_procesos_perceptuales import PruebaProcesosPerceptualesWindow
+            self.ventana_procesos = PruebaProcesosPerceptualesWindow(self.paciente_seleccionado)
+            self.ventana_procesos.show()
+            self.close()
 
     def abrir_ventana_funciones_neurocognitivas(self):
-        from prueba_funciones_neurocognitivas import PruebaFuncionesNeurocognitivasWindow
-        self.ventana_neurocognitivas = PruebaFuncionesNeurocognitivasWindow()
-        self.ventana_neurocognitivas.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_funciones_neurocognitivas import PruebaFuncionesNeurocognitivasWindow
+            self.ventana_neurocognitivas = PruebaFuncionesNeurocognitivasWindow(self.paciente_seleccionado)
+            self.ventana_neurocognitivas.show()
+            self.close()
 
     def abrir_ventana_lenguaje(self):
-        from prueba_lenguaje import PruebaLenguajeWindow
-        self.ventana_lenguaje = PruebaLenguajeWindow()
-        self.ventana_lenguaje.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_lenguaje import PruebaLenguajeWindow
+            self.ventana_lenguaje = PruebaLenguajeWindow(self.paciente_seleccionado)
+            self.ventana_lenguaje.show()
+            self.close()
 
     def abrir_ventana_memoria(self):
-        from prueba_procesos_memoria import PruebaProcesosMemoriaWindow
-        self.ventana_memoria = PruebaProcesosMemoriaWindow()
-        self.ventana_memoria.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_procesos_memoria import PruebaProcesosMemoriaWindow
+            self.ventana_memoria = PruebaProcesosMemoriaWindow(self.paciente_seleccionado)
+            self.ventana_memoria.show()
+            self.close()
 
     def abrir_ventana_funcion_ejecutiva(self):
-        from prueba_funcion_ejecutiva import PruebaFuncionEjecutivaWindow
-        self.ventana_funcion_ejecutiva = PruebaFuncionEjecutivaWindow()
-        self.ventana_funcion_ejecutiva.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_funcion_ejecutiva import PruebaFuncionEjecutivaWindow
+            self.ventana_funcion_ejecutiva = PruebaFuncionEjecutivaWindow(self.paciente_seleccionado)
+            self.ventana_funcion_ejecutiva.show()
+            self.close()
 
     def abrir_ventana_capacidad_intelectual(self):
-        from prueba_capacidad_intelectual import PruebaCapacidadIntelectualWindow
-        self.ventana_capacidad_intelectual = PruebaCapacidadIntelectualWindow()
-        self.ventana_capacidad_intelectual.show()
-        self.close()
+        if hasattr(self, 'paciente_seleccionado'):
+            from prueba_capacidad_intelectual import PruebaCapacidadIntelectualWindow
+            self.ventana_capacidad_intelectual = PruebaCapacidadIntelectualWindow(self.paciente_seleccionado)
+            self.ventana_capacidad_intelectual.show()
+            self.close()
 
 
-      
 # Ejecutar la aplicación
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication
     app = QApplication(sys.argv)
 
-    ventana = EvaluacionNeuropsicologicaWindow()
+    # Crear un ejemplo de paciente seleccionado para pruebas
+    paciente_seleccionado = {
+        'nombre': 'Juan Pérez',
+        'codigo_hc': '12345'
+    }
+
+    ventana = EvaluacionNeuropsicologicaWindow(paciente_seleccionado)
     ventana.show()
 
     sys.exit(app.exec_())
