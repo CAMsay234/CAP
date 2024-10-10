@@ -1,7 +1,7 @@
 import sys
 import os
 import requests
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog, QApplication
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 from areas import AreasWindow
