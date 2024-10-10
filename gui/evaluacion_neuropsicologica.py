@@ -1,8 +1,8 @@
-import os
 from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSpacerItem, QSizePolicy, QGridLayout
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
-
+import sys
+import os
 class EvaluacionNeuropsicologicaWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
         super().__init__()
@@ -51,29 +51,31 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         header_background_layout.addWidget(self.input_nombre)
 
         # Botones de "Actualizar Datos Personales" y "Actualizar Historia Clínica" en el banner azul
-        self.btn_actualizar_datos = QPushButton("ACTUALIZAR DATOS PERSONALES")
+        self.btn_actualizar_datos = QPushButton("ACTUALIZAR DATOS\nPERSONALES")
+        self.btn_actualizar_datos.setMaximumWidth(200)
         self.btn_actualizar_datos.setStyleSheet("""
             QPushButton {
                 background-color: white;
                 color: #005BBB;
-                font-size: 14px;
+                font-size: 12px;
                 padding: 10px 20px;
                 border-radius: 5px;
-                min-width: 250px;
+                
             }
             QPushButton:hover {
                 background-color: #e0e0e0;
             }
         """)
-        self.btn_actualizar_historia = QPushButton("ACTUALIZAR HISTORIA CLÍNICA")
+        self.btn_actualizar_historia = QPushButton("ACTUALIZAR HISTORIA\nCLÍNICA")
+        self.btn_actualizar_historia.setMaximumWidth(200)
         self.btn_actualizar_historia.setStyleSheet("""
             QPushButton {
                 background-color: white;
                 color: #005BBB;
-                font-size: 14px;
-                padding: 10px 20px;
+                font-size: 12px;
+                padding: 8px 20px;
                 border-radius: 5px;
-                min-width: 250px;
+                
             }
             QPushButton:hover {
                 background-color: #e0e0e0;
@@ -127,6 +129,8 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 padding: 20px;
                 border-radius: 10px;
                 border: 2px solid #005BBB;
+                min-width: 200px;  /* Ajustar el ancho mínimo */
+                min-height: 50px;  /* Ajustar el alto mínimo */
             }
             QPushButton:hover {
                 background-color: #e0e0e0;
@@ -195,6 +199,7 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 padding: 10px;
             }
         """)
+        self.btn_diagnostico.clicked.connect(self.abrir_ventana_diagnostico)
 
         # Agregar los botones inferiores al layout
         bottom_buttons_layout.addWidget(self.btn_seguimiento, alignment=Qt.AlignCenter)
@@ -271,6 +276,12 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             self.ventana_capacidad_intelectual.show()
             self.close()
 
+    def abrir_ventana_diagnostico(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            from diagnostico import DiagnosticoWindow
+            self.ventana_diagnostico = DiagnosticoWindow(self.paciente_seleccionado)
+            self.ventana_diagnostico.show()
+            self.close()
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
@@ -288,4 +299,3 @@ if __name__ == '__main__':
     ventana.show()
 
     sys.exit(app.exec_())
-
