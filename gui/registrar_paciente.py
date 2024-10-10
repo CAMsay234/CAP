@@ -1,5 +1,5 @@
 import os
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QSpacerItem, QSizePolicy, QGridLayout, QComboBox, QDateEdit
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QGridLayout, QComboBox, QDateEdit
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, QDate
 import requests  # Para realizar las solicitudes al backend
@@ -106,7 +106,7 @@ class RegistrarPacienteWindow(QMainWindow):
                     input_widget = QLineEdit()
 
                 input_widget.setPlaceholderText(f"Ingrese {label.lower()}")
-            
+
             form_layout.addWidget(label_widget, i, 0)  # Título
             form_layout.addWidget(input_widget, i, 1)  # Campo de entrada
 
@@ -139,7 +139,7 @@ class RegistrarPacienteWindow(QMainWindow):
                     input_widget = QLineEdit()
 
                 input_widget.setPlaceholderText(f"Ingrese {label.lower()}")
-            
+
             form_layout.addWidget(label_widget, i, 2)  # Título
             form_layout.addWidget(input_widget, i, 3)  # Campo de entrada
 
@@ -183,71 +183,12 @@ class RegistrarPacienteWindow(QMainWindow):
         # Conectar el botón "Guardar datos personales" con la función para guardar el paciente y abrir la ventana de evaluación
         self.boton_guardar.clicked.connect(self.guardar_paciente)
 
-        self.boton_continuar = QPushButton("Continuar historia clínica")
-        self.boton_continuar.setStyleSheet("""
-            QPushButton {
-                background-color: #005BBB;  /* Color azul */
-                color: white;
-                font-size: 16px;
-                padding: 15px 30px;  /* Aumenta el padding */
-                border-radius: 10px;  /* Asegúrate de que el ancho sea lo suficientemente grande */ 
-                min-width: 250px;  /* Asegúrate de que el ancho sea lo suficientemente grande */
-            }
-            QPushButton:hover {
-                background-color: #003F73;  /* Color más oscuro al pasar el cursor */
-            }
-        """)
-        self.boton_continuar.clicked.connect(self.continuar_historia_clinica)
-        buttons_layout.addWidget(self.boton_continuar, alignment=Qt.AlignCenter)
-
         main_layout.addLayout(buttons_layout)
 
         # Crear un widget central para contener los elementos
         widget = QWidget()
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
-    
-    def continuar_historia_clinica(self):
-        """Función para continuar con la historia clínica del paciente."""
-        if hasattr(self, 'paciente_seleccionado'):
-            from historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
-            self.historia_clinica_window = HistoriaClinicaWindow()   # Crear la ventana de registrar paciente
-            self.historia_clinica_window.show()  # Mostrar la ventana de registrar paciente
-            self.close()  # Cerrar la ventana actual
-        else:
-            # Crear una ventana de error personalizada
-            error_msg = QMessageBox()
-            error_msg.setIcon(QMessageBox.Critical)  # Establecer icono crítico
-            error_msg.setWindowTitle("Error")  # Título de la ventana
-            error_msg.setText("No se ha suministrado un paciente")  # Mensaje principal
-            error_msg.setInformativeText("Por favor, guarde los datos del paciente antes de continuar.")  # Texto informativo
-            error_msg.setDetailedText("Verifique que todos los datos personales del paciente han sido ingresados y que el paciente ha sido guardado correctamente en la base de datos.")  # Detalles adicionales
-            error_msg.setStandardButtons(QMessageBox.Ok)  # Botón estándar
-
-            # Establecer estilo personalizado
-            error_msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: #f8f8f8;  /* Fondo claro */
-                    font-size: 10px;  /* Tamaño de la letra para el cuadro de mensaje */
-                }
-                QLabel {
-                    font-size: 12px;  /* Tamaño de la letra para las etiquetas */
-                    color: #333333;  /* Color del texto principal */
-                }
-                QPushButton {
-                    background-color: #005BBB;
-                    font-size: 10px;  /* Tamaño de la letra para los botones */
-                    color: white;
-                    padding: 2px;
-                    border-radius: 2px;
-                }
-                QPushButton:hover {
-                    background-color: #004C99;
-                }
-            """)
-
-            # Mostrar la ventana de error
-            error_msg.exec_()
 
     def abrir_seleccionar_registrar_paciente(self):
         from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow  # Importar la nueva ventana de registro de pacientes
@@ -284,7 +225,7 @@ class RegistrarPacienteWindow(QMainWindow):
         except Exception as e:
             print(f"Error de conexión: {str(e)}")
             return "Error"
-        
+
     def guardar_paciente(self):
         try:
             # Validar que todos los campos requeridos estén llenos
@@ -309,7 +250,7 @@ class RegistrarPacienteWindow(QMainWindow):
 
             # Realizar la solicitud POST para guardar el paciente
             response = requests.post('http://localhost:5000/paciente/nuevo', json=data)
-            
+
             if response.status_code == 201:
                 # Mostrar mensaje de éxito
                 success_msg = QMessageBox()
@@ -339,8 +280,7 @@ class RegistrarPacienteWindow(QMainWindow):
                 success_msg.exec_()
                 paciente = response.json()
                 self.paciente_seleccionado = paciente  # Guardar la respuesta del paciente
-                self.boton_continuar.setEnabled(True) 
-                self.guardar_y_abrir_evaluacion()  # Guardar el paciente y abrir la ventana de evaluación neuropsicológica
+                self.guardar_y_abrir_hc()  # Guardar el paciente y abrir la ventana de evaluación neuropsicológica
             else:
                 # Mostrar mensaje de error si la respuesta no fue exitosa
                 error_msg = QMessageBox()
@@ -453,12 +393,12 @@ class RegistrarPacienteWindow(QMainWindow):
             """)
             error_msg.exec_()
 
-
-    def guardar_y_abrir_evaluacion(self):
+    def guardar_y_abrir_hc(self):
         """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
+        from historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
         if hasattr(self, 'paciente_seleccionado'):
-            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)  # Crear la ventana de evaluación neuropsicológica
-            self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de evaluación neuropsicológica
+            self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)  # Crear la ventana de evaluación neuropsicológica
+            self.historia_clinica_window.show()  # Mostrar la ventana de evaluación neuropsicológica
             self.close()
 
 # Ejemplo de cómo llamar a la clase

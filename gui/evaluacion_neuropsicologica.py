@@ -177,6 +177,9 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 padding: 10px;
             }
         """)
+        self.btn_seguimiento.clicked.connect(self.abrir_seguimiento)
+        header_background_layout.addWidget(self.btn_seguimiento, alignment=Qt.AlignRight)
+
         self.btn_diagnostico = QPushButton("DIAGNÓSTICO")
         self.btn_diagnostico.setStyleSheet("""
             QPushButton {
@@ -188,6 +191,9 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 padding: 10px;
             }
         """)
+        self.btn_diagnostico.clicked.connect(self.abrir_diagnostico)
+        header_background_layout.addWidget(self.btn_diagnostico, alignment=Qt.AlignRight)
+
         self.btn_visualizaciones = QPushButton("VISUALIZACIONES")
         self.btn_visualizaciones.setStyleSheet("""
             QPushButton {
@@ -199,7 +205,8 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 padding: 10px;
             }
         """)
-        self.btn_diagnostico.clicked.connect(self.abrir_ventana_diagnostico)
+        self.btn_visualizaciones.clicked.connect(self.abrir_visualizacion)
+        header_background_layout.addWidget(self.btn_visualizaciones, alignment=Qt.AlignRight)
 
         # Agregar los botones inferiores al layout
         bottom_buttons_layout.addWidget(self.btn_seguimiento, alignment=Qt.AlignCenter)
@@ -275,11 +282,25 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             self.ventana_capacidad_intelectual = PruebaCapacidadIntelectualWindow(self.paciente_seleccionado)
             self.ventana_capacidad_intelectual.show()
             self.close()
-
-    def abrir_ventana_diagnostico(self):
+    
+    def abrir_seguimiento(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            from seguimiento import SeguimientoWindow
+            self.ventana_seguimiento = SeguimientoWindow(self.paciente_seleccionado)
+            self.ventana_seguimiento.show()
+            self.close()
+    
+    def abrir_diagnostico(self):
         if hasattr(self, 'paciente_seleccionado'):
             from diagnostico import DiagnosticoWindow
             self.ventana_diagnostico = DiagnosticoWindow(self.paciente_seleccionado)
+            self.ventana_diagnostico.show()
+            self.close()
+
+    def abrir_visualizacion(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            from visualizacion import VisualizacionWindow
+            self.ventana_diagnostico = VisualizacionWindow(self.paciente_seleccionado)
             self.ventana_diagnostico.show()
             self.close()
 
