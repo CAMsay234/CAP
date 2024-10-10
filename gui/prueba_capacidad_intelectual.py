@@ -9,9 +9,9 @@ import sqlite3  # Importar el módulo para trabajar con bases de datos SQLite
 
 
 class PruebaCapacidadIntelectualWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self,paciente_seleccionado):
         super().__init__()
-
+        self.paciente_seleccionado = paciente_seleccionado
         # Configurar la ventana
         self.setWindowTitle("Prueba capacidad intelectual")
         self.showMaximized()  # Abrir la ventana maximizada
