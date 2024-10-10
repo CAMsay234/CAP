@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from app import db
 from app.models.diagnostico import Diagnostico
 from app.models.hipotesis import Hipotesis
+from datetime import datetime
 
 # Definir el blueprint para las rutas relacionadas con "diagnosticos"
 diagnosticos_bp = Blueprint('diagnosticos', __name__)
@@ -23,7 +24,7 @@ def crear_diagnostico():
     nuevo_diagnostico = Diagnostico(
         codigo_hc=codigo_hc,
         plan_Tratamiento=plan_tratamiento,
-        fecha=fecha,
+        fecha=datetime.strptime(fecha, '%Y-%m-%d').date(),
         conclusion=conclusion
     )
 
@@ -49,7 +50,7 @@ def obtener_diagnosticos():
     diagnosticos_list = [{
         "codigo_hc": d.codigo_hc,
         "plan_tratamiento": d.plan_Tratamiento,
-        "fecha": d.fecha,
+        "fecha": d.fecha.strftime('%Y-%m-%d'),
         "conclusion": d.conclusion,
         "hipotesis": [{"id": h.id, "descripcion": h.descripcion} for h in d.hipotesis]
     } for d in diagnosticos]
@@ -63,7 +64,7 @@ def obtener_diagnostico(codigo_hc):
         return jsonify({
             "codigo_hc": diagnostico.codigo_hc,
             "plan_tratamiento": diagnostico.plan_Tratamiento,
-            "fecha": diagnostico.fecha,
+            "fecha": diagnostico.fecha.strftime('%Y-%m-%d'),
             "conclusion": diagnostico.conclusion,
             "hipotesis": [{"id": h.id, "descripcion": h.descripcion} for h in diagnostico.hipotesis]
         }), 200
@@ -79,7 +80,7 @@ def actualizar_diagnostico(codigo_hc):
 
     data = request.get_json()
     diagnostico.plan_Tratamiento = data.get('plan_Tratamiento', diagnostico.plan_Tratamiento)
-    diagnostico.fecha = data.get('fecha', diagnostico.fecha)
+    diagnostico.fecha = datetime.strptime(data.get('fecha', diagnostico.fecha.strftime('%Y-%m-%d')), '%Y-%m-%d').date()
     diagnostico.conclusion = data.get('conclusion', diagnostico.conclusion)
 
     # Actualizar hipótesis relacionadas
