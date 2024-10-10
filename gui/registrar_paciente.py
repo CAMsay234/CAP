@@ -1,5 +1,5 @@
 import os
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QSpacerItem, QSizePolicy, QGridLayout, QComboBox, QDateEdit
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QGridLayout, QComboBox, QDateEdit
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, QDate
 import requests  # Para realizar las solicitudes al backend
@@ -106,7 +106,7 @@ class RegistrarPacienteWindow(QMainWindow):
                     input_widget = QLineEdit()
 
                 input_widget.setPlaceholderText(f"Ingrese {label.lower()}")
-            
+
             form_layout.addWidget(label_widget, i, 0)  # Título
             form_layout.addWidget(input_widget, i, 1)  # Campo de entrada
 
@@ -139,7 +139,7 @@ class RegistrarPacienteWindow(QMainWindow):
                     input_widget = QLineEdit()
 
                 input_widget.setPlaceholderText(f"Ingrese {label.lower()}")
-            
+
             form_layout.addWidget(label_widget, i, 2)  # Título
             form_layout.addWidget(input_widget, i, 3)  # Campo de entrada
 
@@ -189,7 +189,7 @@ class RegistrarPacienteWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
-    
+
     def abrir_seleccionar_registrar_paciente(self):
         from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow  # Importar la nueva ventana de registro de pacientes
         self.seleccionar_registrar_paciente_window = SeleccionarRegistrarPacienteWindow()   # Crear la ventana de registrar paciente
@@ -225,7 +225,7 @@ class RegistrarPacienteWindow(QMainWindow):
         except Exception as e:
             print(f"Error de conexión: {str(e)}")
             return "Error"
-        
+
     def guardar_paciente(self):
         try:
             # Validar que todos los campos requeridos estén llenos
@@ -250,7 +250,7 @@ class RegistrarPacienteWindow(QMainWindow):
 
             # Realizar la solicitud POST para guardar el paciente
             response = requests.post('http://localhost:5000/paciente/nuevo', json=data)
-            
+
             if response.status_code == 201:
                 # Mostrar mensaje de éxito
                 success_msg = QMessageBox()
@@ -280,7 +280,6 @@ class RegistrarPacienteWindow(QMainWindow):
                 success_msg.exec_()
                 paciente = response.json()
                 self.paciente_seleccionado = paciente  # Guardar la respuesta del paciente
-                self.boton_continuar.setEnabled(True) 
                 self.guardar_y_abrir_hc()  # Guardar el paciente y abrir la ventana de evaluación neuropsicológica
             else:
                 # Mostrar mensaje de error si la respuesta no fue exitosa
@@ -393,7 +392,6 @@ class RegistrarPacienteWindow(QMainWindow):
                 }
             """)
             error_msg.exec_()
-
 
     def guardar_y_abrir_hc(self):
         """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
