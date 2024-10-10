@@ -6,7 +6,7 @@ import unittest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Imprimir sys.path para verificar que contiene la ruta correcta
-print(sys.path)
+#print(sys.path)
 
 # Importa las pruebas
 from test_evaluaciones import TestEvaluacionesNeuropsicologicas
