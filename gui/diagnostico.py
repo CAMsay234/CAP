@@ -13,6 +13,9 @@ class DiagnosticoWindow(QMainWindow):
         super().__init__()
 
         self.paciente_seleccionado = paciente_seleccionado
+        self.hipotesis_map = {}  # Diccionario para mapear descripciones de hipótesis a sus IDs
+        self.diagnostico_existente = False  # Bandera para saber si el diagnóstico ya existe
+
         # Configurar la ventana
         self.setWindowTitle(f"Diagnóstico de {self.paciente_seleccionado['nombre']}")
         self.showMaximized()  # Abrir la ventana maximizada
@@ -189,6 +192,9 @@ class DiagnosticoWindow(QMainWindow):
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
 
+        # Cargar diagnóstico del paciente si existe
+        self.cargar_diagnostico_paciente()
+
     def cargar_hipotesis(self):
         """Función para cargar las hipótesis desde la base de datos usando una petición GET."""
         try:
@@ -197,10 +203,30 @@ class DiagnosticoWindow(QMainWindow):
                 hipotesis = response.json()  # Obtener la lista de hipótesis
                 self.combo_hipotesis.clear()  # Limpiar el ComboBox antes de añadir nuevas opciones
                 self.combo_hipotesis.addItem("Seleccione una hipótesis")  # Añadir un elemento por defecto
+                self.hipotesis_map = {h['descripcion']: h['id'] for h in hipotesis}  # Mapear descripciones a IDs
                 for h in hipotesis:
                     self.combo_hipotesis.addItem(h['descripcion'])  # Añadir cada hipótesis al ComboBox
             else:
                 print(f"Error al obtener las hipótesis: {response.status_code}")
+        except Exception as e:
+            print(f"Error de conexión: {str(e)}")
+
+    def cargar_diagnostico_paciente(self):
+        """Función para cargar el diagnóstico del paciente si existe."""
+        try:
+            response = requests.get(f'http://127.0.0.1:5000/diagnosticos/{self.paciente_seleccionado["codigo_hc"]}')
+            if response.status_code == 200:
+                diagnostico = response.json()
+                self.tratamiento_input.setPlainText(diagnostico['plan_tratamiento'])
+                self.diagnostico_input.setPlainText(diagnostico['conclusion'])
+                for hipotesis in diagnostico['hipotesis']:
+                    item = QListWidgetItem(hipotesis['descripcion'])
+                    self.lista_hipotesis.addItem(item)
+                self.diagnostico_existente = True  # Marcar que el diagnóstico ya existe
+            elif response.status_code == 404:
+                print("No se encontró diagnóstico para este paciente.")
+            else:
+                print(f"Error al obtener el diagnóstico: {response.status_code}")
         except Exception as e:
             print(f"Error de conexión: {str(e)}")
 
@@ -227,9 +253,9 @@ class DiagnosticoWindow(QMainWindow):
         # Obtener las hipótesis seleccionadas
         for index in range(self.lista_hipotesis.count()):
             item_text = self.lista_hipotesis.item(index).text()
-            # Aquí deberías mapear el texto de la hipótesis al ID correspondiente
-            # Por simplicidad, asumimos que el texto es el ID
-            hipotesis_ids.append(item_text)
+            hipotesis_id = self.hipotesis_map.get(item_text)  # Obtener el ID de la hipótesis
+            if hipotesis_id:
+                hipotesis_ids.append(hipotesis_id)
 
         data = {
             "codigo_hc": codigo_hc,
@@ -240,11 +266,19 @@ class DiagnosticoWindow(QMainWindow):
         }
 
         try:
-            response = requests.post('http://127.0.0.1:5000/diagnosticos', json=data)
-            if response.status_code == 201:
-                QMessageBox.information(self, "Éxito", "Diagnóstico guardado exitosamente")
+            if self.diagnostico_existente:
+                response = requests.put(f'http://127.0.0.1:5000/diagnosticos/{codigo_hc}', json=data)
+                if response.status_code == 200:
+                    QMessageBox.information(self, "Éxito", "Diagnóstico actualizado exitosamente")
+                else:
+                    QMessageBox.critical(self, "Error", f"Error al actualizar el diagnóstico: {response.status_code}")
             else:
-                QMessageBox.critical(self, "Error", f"Error al guardar el diagnóstico: {response.status_code}")
+                response = requests.post('http://127.0.0.1:5000/diagnosticos', json=data)
+                if response.status_code == 201:
+                    QMessageBox.information(self, "Éxito", "Diagnóstico guardado exitosamente")
+                    self.diagnostico_existente = True  # Marcar que el diagnóstico ahora existe
+                else:
+                    QMessageBox.critical(self, "Error", f"Error al guardar el diagnóstico: {response.status_code}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error de conexión: {str(e)}")
 
