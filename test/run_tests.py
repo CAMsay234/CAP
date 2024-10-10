@@ -14,3 +14,7 @@ from test_evaluaciones import TestEvaluacionesNeuropsicologicas
 # Ejecuta las pruebas
 if __name__ == '__main__':
     unittest.main()
+
+
+# Ejecutar el script con el siguiente comando
+# python test/run_tests.py
