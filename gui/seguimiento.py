@@ -43,10 +43,9 @@ class SeguimientoWindow(QMainWindow):
         header_background_layout.addWidget(self.title, alignment=Qt.AlignCenter)
 
         # Campo de código
-        self.codigo_label = QLabel("Código:")
+        self.codigo_label = QLabel(f"Código:{self.paciente_seleccionado['codigo_hc']}")
         self.codigo_label.setFont(QFont('Arial', 10))  # Reducir el tamaño de la fuente
         self.codigo_input = QLabel()
-        self.codigo_input.setText(f"{self.obtener_siguiente_codigo()}")
         self.codigo_input.setFixedWidth(100)
         codigo_layout = QHBoxLayout()  # Definir el layout antes de usarlo
         codigo_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
