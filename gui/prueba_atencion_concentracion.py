@@ -11,6 +11,9 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
         super().__init__()
         self.paciente_seleccionado = paciente_seleccionado
+        self.prueba_id = None  # ID de la prueba de atención y concentración
+        self.subpruebas_map = {}  # Diccionario para mapear nombres de subpruebas a sus IDs
+
         # Configurar la ventana
         self.setWindowTitle("Prueba atención y concentración")
         self.showMaximized()  # Abrir la ventana maximizada
@@ -148,6 +151,9 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
 
+        # Llamar a la función para cargar los datos del paciente
+        self.cargar_datos_paciente()
+
     def add_section(self, title, fields, layout):
         """Añadir secciones con campos de entrada de texto"""
         title_label = QLabel(title)
@@ -219,6 +225,58 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
             self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
             self.close()  # Cerrar la ventana actual
 
+    def cargar_datos_paciente(self):
+        """Función para cargar los datos de las evaluaciones y subpruebas del paciente si existen."""
+        try:
+            # Obtener el ID de la prueba de atención y concentración
+            response = requests.get('http://localhost:5000/pruebas')
+            if response.status_code == 200:
+                pruebas = response.json()
+                self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "atención y concentración"), None)
+                if self.prueba_id is None:
+                    print("Prueba de atención y concentración no encontrada.")
+                    return
+            else:
+                print(f"Error al obtener las pruebas: {response.status_code}")
+                return
+    
+            # Obtener las subpruebas de la prueba de atención y concentración
+            response = requests.get(f'http://localhost:5000/subpruebas')
+            if response.status_code == 200:
+                subpruebas = response.json()
+                self.subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas if sp['id_prueba'] == self.prueba_id}
+                print(f"Subpruebas obtenidas: {self.subpruebas_map}")  # Mensaje de depuración
+            else:
+                print(f"Error al obtener las subpruebas: {response.status_code}")
+                return
+    
+            # Verificar los valores de codigo_hc y prueba_id
+            print(f"codigo_hc: {self.paciente_seleccionado['codigo_hc']}, prueba_id: {self.prueba_id}")
+    
+            # Obtener las evaluaciones del paciente para la prueba de atención y concentración
+            response = requests.get(f'http://localhost:5000/evaluaciones/{self.paciente_seleccionado["codigo_hc"]}/{self.prueba_id}')
+            if response.status_code == 200:
+                evaluaciones = response.json()
+                print(f"Evaluaciones obtenidas: {evaluaciones}")  # Mensaje de depuración
+                for evaluacion in evaluaciones:
+                    subprueba_nombre = next((nombre for nombre, id in self.subpruebas_map.items() if id == evaluacion['id_subprueba']), None)
+                    if subprueba_nombre:
+                        print(f"Procesando subprueba: {subprueba_nombre}")  # Mensaje de depuración
+                        for row in range(1, self.table_layout.rowCount()):
+                            test_label = self.table_layout.itemAtPosition(row, 0).widget().text()
+                            if test_label == subprueba_nombre or (subprueba_nombre == "Tiempo" and "Tiempo" in test_label):
+                                self.table_layout.itemAtPosition(row, 1).widget().setText(evaluacion['puntaje'])
+                                self.table_layout.itemAtPosition(row, 2).widget().setText(evaluacion['media'])
+                                self.table_layout.itemAtPosition(row, 3).widget().setText(evaluacion['desviacion_estandar'])
+                                self.table_layout.itemAtPosition(row, 4).widget().setText(evaluacion['interpretacion'])
+                                break
+            elif response.status_code == 404:
+                print("No se encontraron evaluaciones para este paciente.")
+            else:
+                print(f"Error al obtener las evaluaciones: {response.status_code}")
+    
+        except Exception as e:
+            print(f"Error de conexión: {str(e)}")
     def guardar_prueba(self):
         # Obtener el nombre de la prueba desde el título de la ventana
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
