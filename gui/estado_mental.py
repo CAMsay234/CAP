@@ -24,22 +24,18 @@ class EstadoMentalWindow(QMainWindow):
         # Logo UPB
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
         self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Tamaño más pequeño
+        pixmap = QPixmap(image_path).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Tamaño más pequeño
         self.logo.setPixmap(pixmap)
         header_background_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
         # Campo de código
-        # Crear el campo de texto de código
-        self.codigo_label = QLabel("Código:")
-        self.codigo_label.setFont(QFont('Arial', 10))  # Reducir el tamaño de la fuente
-        self.codigo_input = QLabel()
-        self.codigo_input.setText(f"{self.obtener_siguiente_codigo()}")
+        self.codigo_label = QLabel(f"Código:{self.paciente_seleccionado['codigo_hc']}")
+        self.codigo_label.setFont(QFont('Arial', 12))
+        self.codigo_label.setStyleSheet("color: white;")
+        self.codigo_input = QLineEdit()
         self.codigo_input.setFixedWidth(100)
-        codigo_layout = QHBoxLayout()  # Definir el layout antes de usarlo
-        codigo_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
-        codigo_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
-        self.codigo_input.setFont(QFont('Arial', 10))  # Reducir el tamaño de la fuente para el valor del código
-        header_background_layout.addLayout(codigo_layout)
+        header_background_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
+        header_background_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
 
         header_layout.addWidget(header_background)
         main_layout.addLayout(header_layout)
@@ -73,21 +69,6 @@ class EstadoMentalWindow(QMainWindow):
 
         # Llamar a la función verificar_datos_estado_mental para cargar los datos al abrir la ventana
         self.verificar_datos_estado_mental()
-
-    
-    def obtener_siguiente_codigo(self):
-        """Función para obtener el siguiente código disponible desde el backend."""
-        url = "http://127.0.0.1:5000/pacientes/count"
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                return str(data.get('count', 0) + 1)  # Incrementar en 1 para el siguiente código
-            else:
-                return "Error"
-        except Exception as e:
-            print(f"Error de conexión: {str(e)}")
-            return "Error"
 
     def verificar_datos_estado_mental(self):
         """Función para verificar si hay datos del estado mental y cargarlos si existen."""
