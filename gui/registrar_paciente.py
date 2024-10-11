@@ -212,6 +212,14 @@ class RegistrarPacienteWindow(QMainWindow):
         except Exception as e:
             print(f"Error de conexión: {str(e)}")
 
+    def guardar_y_abrir_hc(self):
+        """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
+        from historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
+        if hasattr(self, 'paciente_seleccionado'):
+            self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)  
+            self.historia_clinica_window.show()  
+            self.close()
+
     def obtener_siguiente_codigo(self):
         """Función para obtener el siguiente código disponible desde el backend."""
         url = "http://127.0.0.1:5000/pacientes/count"
@@ -393,13 +401,8 @@ class RegistrarPacienteWindow(QMainWindow):
             """)
             error_msg.exec_()
 
-    def guardar_y_abrir_hc(self):
-        """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
-        from historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
-        if hasattr(self, 'paciente_seleccionado'):
-            self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)  # Crear la ventana de evaluación neuropsicológica
-            self.historia_clinica_window.show()  # Mostrar la ventana de evaluación neuropsicológica
-            self.close()
+    
+
 
 # Ejemplo de cómo llamar a la clase
 if __name__ == "__main__":
