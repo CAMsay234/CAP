@@ -75,25 +75,6 @@ class SeleccionarRegistrarPacienteWindow(QMainWindow):
         buttons_layout.setSpacing(40)  # Espaciado entre los botones
 
         # Botón para "Seleccionar Paciente"
-        self.boton_seleccionar = QPushButton("SELECCIONAR PACIENTE")
-        self.boton_seleccionar.setStyleSheet("""
-            QPushButton {
-                background-color: #D8D8D8;
-                border: 1px solid #005BBB;
-                border-radius: 10px;
-                font-size: 18px;
-                height: 100px;
-                width: 250px;
-                color: #005BBB;
-            }
-            QPushButton:hover {
-                background-color: #c0c0c0;
-            }
-        """)
-        self.boton_seleccionar.clicked.connect(self.abrir_seleccionar_paciente)  # Conectar el botón "Seleccionar Paciente"
-        buttons_layout.addWidget(self.boton_seleccionar, alignment=Qt.AlignCenter)
-
-        # Botón para "Registrar Paciente"
         self.boton_registrar = QPushButton("REGISTRAR PACIENTE")
         self.boton_registrar.setStyleSheet("""
             QPushButton {
@@ -109,8 +90,27 @@ class SeleccionarRegistrarPacienteWindow(QMainWindow):
                 background-color: #c0c0c0;
             }
         """)
-        self.boton_registrar.clicked.connect(self.abrir_registrar_paciente)  # Conectar el botón "Registrar Paciente"
+        self.boton_registrar.clicked.connect(self.abrir_registrar_paciente)  # Conectar el botón "Seleccionar Paciente"
         buttons_layout.addWidget(self.boton_registrar, alignment=Qt.AlignCenter)
+
+        # Botón para "Registrar Paciente"
+        self.boton_seleccionar = QPushButton("SELECCIONAR PACIENTE")
+        self.boton_seleccionar.setStyleSheet("""
+            QPushButton {
+                background-color: #D8D8D8;
+                border: 1px solid #005BBB;
+                border-radius: 10px;
+                font-size: 18px;
+                height: 100px;
+                width: 250px;
+                color: #005BBB;
+            }
+            QPushButton:hover {
+                background-color: #c0c0c0;
+            }
+        """)
+        self.boton_seleccionar.clicked.connect(self.abrir_seleccionar_paciente)  # Conectar el botón "Registrar Paciente"
+        buttons_layout.addWidget(self.boton_seleccionar, alignment=Qt.AlignCenter)
 
         # Añadir el layout de botones al layout principal
         main_layout.addLayout(buttons_layout)
