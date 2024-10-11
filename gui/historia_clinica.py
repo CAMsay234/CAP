@@ -6,6 +6,7 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 from areas import AreasWindow
 from estado_mental import EstadoMentalWindow
+from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
 
 class HistoriaClinicaWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
@@ -206,6 +207,11 @@ class HistoriaClinicaWindow(QMainWindow):
             self.areas = AreasWindow(self.paciente_seleccionado)
             self.areas.show()
 
+    def abrir_evaluacion_neuropsicologica(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            self.evaluaciones_neuropsicologicas = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
+            self.evaluaciones_neuropsicologicas.show()
+
     def verificar_datos_historia_clinica(self):
         """Función para verificar si hay datos de la historia clínica y cargarlos si existen."""
         try:
@@ -254,7 +260,7 @@ class HistoriaClinicaWindow(QMainWindow):
             # Validar que todos los campos de la historia clínica estén llenos
             if not self.motivo_consulta.toPlainText() or not self.estado_actual.toPlainText() or not self.antecedentes.toPlainText() or not self.historial_personal.toPlainText() or not self.historial_familiar.toPlainText():
                 raise ValueError("Todos los campos obligatorios deben estar completos.")
-
+        
             # Obtener los datos de la historia clínica desde los campos de entrada
             data = {
                 "codigo_hc": self.paciente_seleccionado['codigo_hc'],
@@ -265,7 +271,7 @@ class HistoriaClinicaWindow(QMainWindow):
                 "historial_personal": self.historial_personal.toPlainText(),
                 "historial_familiar": self.historial_familiar.toPlainText()
             }
-
+        
             # Realizar la solicitud POST para guardar la historia clínica
             response = requests.post('http://localhost:5000/historias', json=data)
             
@@ -296,6 +302,7 @@ class HistoriaClinicaWindow(QMainWindow):
                     }
                 """)
                 success_msg.exec_()
+                self.abrir_evaluacion_neuropsicologica()
             else:
                 # Mostrar mensaje de error si la respuesta no fue exitosa
                 error_msg = QMessageBox()
@@ -323,7 +330,7 @@ class HistoriaClinicaWindow(QMainWindow):
                     }
                 """)
                 error_msg.exec_()
-
+        
         except ValueError as ve:
             # Mostrar mensaje de advertencia si hay algún campo vacío
             warning_msg = QMessageBox()
@@ -351,7 +358,7 @@ class HistoriaClinicaWindow(QMainWindow):
                 }
             """)
             warning_msg.exec_()
-
+        
         except requests.exceptions.RequestException as re:
             # Mostrar ventana de error si hubo un problema con la conexión al servidor
             error_msg = QMessageBox()
@@ -379,7 +386,7 @@ class HistoriaClinicaWindow(QMainWindow):
                 }
             """)
             error_msg.exec_()
-
+        
         except Exception as e:
             # Mostrar ventana de error si ocurrió un error inesperado
             error_msg = QMessageBox()
