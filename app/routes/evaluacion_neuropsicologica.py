@@ -9,7 +9,7 @@ evaluaciones_bp = Blueprint('evaluaciones', __name__)
 @evaluaciones_bp.route('/evaluaciones', methods=['POST'])
 def crear_evaluacion():
     data = request.get_json()  # Obtener los datos en formato JSON
-    if not data["codigo_hc"] or not data["id_prueba"] or not data["id_subprueba"] or not data["puntaje"] or not data["media"] or not data["desviacion_estandar"] or not data["interpretacion"]:
+    if not data["codigo_hc"] or not data["id_prueba"] or not data["id_subprueba"]:
             return jsonify({"error": "Todos los campos son obligatorios"}), 400
     nueva_evaluacion = EvaluacionNeuropsicologica(
         codigo_hc=data["codigo_hc"],
@@ -18,6 +18,7 @@ def crear_evaluacion():
         puntaje=data["puntaje"],
         media=data["media"],
         desviacion_estandar=data["desviacion_estandar"],
+        escalar=data["escalar"],
         interpretacion=data["interpretacion"]
     )
     
@@ -41,6 +42,7 @@ def obtener_evaluaciones():
         "puntaje": e.puntaje,
         "media": e.media,
         "desviacion_estandar": e.desviacion_estandar,
+        "escalar": e.escalar,
         "interpretacion": e.interpretacion
     } for e in evaluaciones]
     return jsonify(evaluaciones_list), 200
@@ -113,6 +115,7 @@ def obtener_evaluaciones_por_codigo_y_prueba(codigo_hc, id_prueba):
         "puntaje": e.puntaje,
         "media": e.media,
         "desviacion_estandar": e.desviacion_estandar,
+        "escalar": e.escalar,
         "interpretacion": e.interpretacion
     } for e in evaluaciones]
 
