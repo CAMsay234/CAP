@@ -211,6 +211,7 @@ class HistoriaClinicaWindow(QMainWindow):
         if hasattr(self, 'paciente_seleccionado'):
             self.evaluaciones_neuropsicologicas = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
             self.evaluaciones_neuropsicologicas.show()
+            self.close() 
 
     def verificar_datos_historia_clinica(self):
         """Función para verificar si hay datos de la historia clínica y cargarlos si existen."""
@@ -272,43 +273,132 @@ class HistoriaClinicaWindow(QMainWindow):
                 "historial_familiar": self.historial_familiar.toPlainText()
             }
         
-            # Realizar la solicitud POST para guardar la historia clínica
-            response = requests.post('http://localhost:5000/historias', json=data)
+            # Verificar si la historia clínica ya existe
+            url = f"http://localhost:5000/historias/{self.paciente_seleccionado['codigo_hc']}"
+            response = requests.get(url)
             
-            if response.status_code == 201:
-                # Mostrar mensaje de éxito
-                success_msg = QMessageBox()
-                success_msg.setIcon(QMessageBox.Information)  # Icono de información para éxito
-                success_msg.setWindowTitle("Éxito")
-                success_msg.setText("Historia clínica guardada correctamente.")
-                success_msg.setStyleSheet("""
-                    QMessageBox {
-                        background-color: #f8f8f8;
-                        font-size: 10px;
-                    }
-                    QLabel {
-                        font-size: 12px;
-                        color: #333333;
-                    }
-                    QPushButton {
-                        background-color: #005BBB;
-                        font-size: 10px;
-                        color: white;
-                        padding: 2px;
-                        border-radius: 2px;
-                    }
-                    QPushButton:hover {
-                        background-color: #004C99;
-                    }
-                """)
-                success_msg.exec_()
-                self.abrir_evaluacion_neuropsicologica()
+            if response.status_code == 200:
+                # Historia clínica existente, realizar una solicitud PUT para actualizarla
+                response = requests.put(url, json=data)
+                if response.status_code == 200:
+                    # Mostrar mensaje de éxito
+                    success_msg = QMessageBox()
+                    success_msg.setIcon(QMessageBox.Information)  # Icono de información para éxito
+                    success_msg.setWindowTitle("Éxito")
+                    success_msg.setText("Historia clínica actualizada correctamente.")
+                    success_msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #f8f8f8;
+                            font-size: 10px;
+                        }
+                        QLabel {
+                            font-size: 12px;
+                            color: #333333;
+                        }
+                        QPushButton {
+                            background-color: #005BBB;
+                            font-size: 10px;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        }
+                        QPushButton:hover {
+                            background-color: #004C99;
+                        }
+                    """)
+                    success_msg.exec_()
+                    self.abrir_evaluacion_neuropsicologica()
+                else:
+                    # Mostrar mensaje de error si la respuesta no fue exitosa
+                    error_msg = QMessageBox()
+                    error_msg.setIcon(QMessageBox.Critical)
+                    error_msg.setWindowTitle("Error")
+                    error_msg.setText(f"Error al actualizar la historia clínica. Código: {response.status_code}")
+                    error_msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #f8f8f8;
+                            font-size: 10px;
+                        }
+                        QLabel {
+                            font-size: 12px;
+                            color: #333333;
+                        }
+                        QPushButton {
+                            background-color: #005BBB;
+                            font-size: 10px;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        }
+                        QPushButton:hover {
+                            background-color: #004C99;
+                        }
+                    """)
+                    error_msg.exec_()
+            elif response.status_code == 404:
+                # Historia clínica no existente, realizar una solicitud POST para crearla
+                response = requests.post('http://localhost:5000/historias', json=data)
+                if response.status_code == 201:
+                    # Mostrar mensaje de éxito
+                    success_msg = QMessageBox()
+                    success_msg.setIcon(QMessageBox.Information)  # Icono de información para éxito
+                    success_msg.setWindowTitle("Éxito")
+                    success_msg.setText("Historia clínica guardada correctamente.")
+                    success_msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #f8f8f8;
+                            font-size: 10px;
+                        }
+                        QLabel {
+                            font-size: 12px;
+                            color: #333333;
+                        }
+                        QPushButton {
+                            background-color: #005BBB;
+                            font-size: 10px;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        }
+                        QPushButton:hover {
+                            background-color: #004C99;
+                        }
+                    """)
+                    success_msg.exec_()
+                    self.abrir_evaluacion_neuropsicologica()
+                else:
+                    # Mostrar mensaje de error si la respuesta no fue exitosa
+                    error_msg = QMessageBox()
+                    error_msg.setIcon(QMessageBox.Critical)
+                    error_msg.setWindowTitle("Error")
+                    error_msg.setText(f"Error al guardar la historia clínica. Código: {response.status_code}")
+                    error_msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #f8f8f8;
+                            font-size: 10px;
+                        }
+                        QLabel {
+                            font-size: 12px;
+                            color: #333333;
+                        }
+                        QPushButton {
+                            background-color: #005BBB;
+                            font-size: 10px;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        }
+                        QPushButton:hover {
+                            background-color: #004C99;
+                        }
+                    """)
+                    error_msg.exec_()
             else:
                 # Mostrar mensaje de error si la respuesta no fue exitosa
                 error_msg = QMessageBox()
                 error_msg.setIcon(QMessageBox.Critical)
                 error_msg.setWindowTitle("Error")
-                error_msg.setText(f"Error al guardar la historia clínica. Código: {response.status_code}")
+                error_msg.setText(f"Error al verificar la historia clínica. Código: {response.status_code}")
                 error_msg.setStyleSheet("""
                     QMessageBox {
                         background-color: #f8f8f8;

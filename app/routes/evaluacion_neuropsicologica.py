@@ -57,6 +57,7 @@ def obtener_evaluacion(codigo_hc, id_prueba, id_subprueba):
             "puntaje": evaluacion.puntaje,
             "media": evaluacion.media,
             "desviacion_estandar": evaluacion.desviacion_estandar,
+            "escalar": evaluacion.escalar,
             "interpretacion": evaluacion.interpretacion
         }), 200
     else:
@@ -73,6 +74,7 @@ def actualizar_evaluacion(codigo_hc, id_prueba, id_subprueba):
     evaluacion.puntaje = data.get('puntaje', evaluacion.puntaje)
     evaluacion.media = data.get('media', evaluacion.media)
     evaluacion.desviacion_estandar = data.get('desviacion_estandar', evaluacion.desviacion_estandar)
+    evaluacion.escalar = data.get('escalar', evaluacion.escalar)
     evaluacion.interpretacion = data.get('interpretacion', evaluacion.interpretacion)
 
     try:
@@ -96,3 +98,22 @@ def eliminar_evaluacion(codigo_hc, id_prueba, id_subprueba):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+# Obtener evaluaciones específicas por codigo_hc y id_prueba (GET)
+@evaluaciones_bp.route('/evaluaciones/<codigo_hc>/<id_prueba>', methods=['GET'])
+def obtener_evaluaciones_por_codigo_y_prueba(codigo_hc, id_prueba):
+    evaluaciones = EvaluacionNeuropsicologica.query.filter_by(codigo_hc=codigo_hc, id_prueba=id_prueba).all()
+    if not evaluaciones:
+        return jsonify({"message": "No se encontraron evaluaciones para este paciente y prueba."}), 404
+
+    evaluaciones_list = [{
+        "codigo_hc": e.codigo_hc,
+        "id_prueba": e.id_prueba,
+        "id_subprueba": e.id_subprueba,
+        "puntaje": e.puntaje,
+        "media": e.media,
+        "desviacion_estandar": e.desviacion_estandar,
+        "interpretacion": e.interpretacion
+    } for e in evaluaciones]
+
+    return jsonify(evaluaciones_list), 200
