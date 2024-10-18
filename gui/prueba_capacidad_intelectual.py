@@ -110,6 +110,31 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
             self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)  # Crear la ventana de registrar paciente
             self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
             self.close()  # Cerrar la ventana actual
+    
+    def obtener_puntuaciones_escalas(self):
+        """Obtiene las puntuaciones escalares totales de cada subprueba."""
+        puntuaciones = {}
+        for row in range(1, self.table_layout.rowCount()):
+            # Obtener el widget de subprueba
+            subprueba_widget = self.table_layout.itemAtPosition(row, 0).widget()
+            if subprueba_widget and isinstance(subprueba_widget, QLabel):
+                subprueba = subprueba_widget.text().strip()
+            else:
+                continue  # Si no hay subprueba, pasa a la siguiente fila
+
+            # Obtener el widget de la puntuación escalar total
+            puntuacion_widget = self.table_layout.itemAtPosition(row, 3).widget()
+            if puntuacion_widget and isinstance(puntuacion_widget, QLineEdit):
+                try:
+                    puntuacion = int(puntuacion_widget.text().strip())
+                except ValueError:
+                    puntuacion = 0  # Si no es un número válido, asigna 0
+            else:
+                puntuacion = 0  # Si no hay widget, asigna 0
+
+            puntuaciones[subprueba] = puntuacion
+
+        return puntuaciones
 
     def guardar_prueba(self):
         # Obtener el nombre de la prueba desde el título de la ventana
@@ -127,16 +152,61 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
             print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
             return
 
+        print("Verificando widgets en el layout...")
+
         # Recorrer cada fila de subpruebas y obtener sus valores
         for row in range(1, self.table_layout.rowCount()):
-            subprueba_nombre = self.table_layout.itemAtPosition(row, 0).widget().text().strip()
-            puntaje = self.table_layout.itemAtPosition(row, 1).widget().text().strip() or None
-            escalar = self.table_layout.itemAtPosition(row, 2).widget().text().strip() or None
+            subprueba_widget = self.table_layout.itemAtPosition(row, 0)
+            puntaje_widget = self.table_layout.itemAtPosition(row, 1)
+            escalar_container = self.table_layout.itemAtPosition(row, 2)
 
-            # Verificar que los campos de puntaje y escalar estén completos
-            if not puntaje or not escalar:
+            # Verificar que los widgets existen
+            if not subprueba_widget or not puntaje_widget or not escalar_container:
+                print(f"Error: Faltan datos en la fila {row}.")
+                continue
+
+            # Obtener los valores de los widgets
+            subprueba_nombre = subprueba_widget.widget().text().strip() if subprueba_widget.widget() else "N/A"
+            puntaje = puntaje_widget.widget().text().strip() if puntaje_widget.widget() else None
+
+            # Acceder al layout del widget contenedor para la puntuación escalar
+            escalar_layout = escalar_container.widget().layout()
+            escalar_values = []
+
+            # Obtener el patrón para esta fila
+            patrones = [
+                [True, False, True, True],  # Fila 1
+                [False, True, True, True],  # Fila 2
+                [True, True, False, True],  # Fila 3
+                [True, False, True, True],  # Fila 4
+                [False, True, True, True],  # Fila 5
+                [True, True, False, True],  # Fila 6
+                [True, True, True, False],  # Fila 7
+                [True, False, True, True],  # Fila 8
+                [False, True, True, True],  # Fila 9
+                [True, True, True, False],  # Fila 10
+                [True, True, False, True],  # Fila 11
+                [True, False, True, True],  # Fila 12
+                [False, True, True, True],  # Fila 13
+                [True, True, True, False],  # Fila 14
+                [True, False, True, True]   # Fila 15
+            ]
+            patron = patrones[(row - 1) % len(patrones)]  # Obtener el patrón correcto
+
+            # Extraer los valores solo de los campos habilitados (False en el patrón)
+            for i, pintar in enumerate(patron):
+                escalar_input = escalar_layout.itemAt(i).widget()
+                if escalar_input and not pintar:  # Si el campo está habilitado (False en el patrón)
+                    value = escalar_input.text().strip() or None
+                    escalar_values.append(value)
+
+            # Verificar que todos los campos de escalar tengan un valor
+            if not all(escalar_values):
                 print(f"Faltan datos para la subprueba '{subprueba_nombre}'.")
                 continue
+
+            # Depuración: Mostrar los valores de puntuación escalar
+            print(f"Puntuaciones escalares para '{subprueba_nombre}': {escalar_values}")
 
             # Verificar si la subprueba existe en la base de datos
             response = requests.get(f'http://localhost:5000/subpruebas')
@@ -145,28 +215,31 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                 continue
 
             subpruebas = response.json()
-            subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == subprueba_nombre.lower() and sp['id_prueba'] == prueba_id), None)
+            subprueba_id = next(
+                (sp['id'] for sp in subpruebas if sp['nombre'].lower() == subprueba_nombre.lower() and sp['id_prueba'] == prueba_id),
+                None
+            )
 
             # Registrar la subprueba si no existe
             if subprueba_id is None:
-                data_subprueba = {
-                    "id_prueba": prueba_id,
-                    "nombre": subprueba_nombre
-                }
+                data_subprueba = {"id_prueba": prueba_id, "nombre": subprueba_nombre}
                 response = requests.post('http://localhost:5000/subpruebas', json=data_subprueba)
                 if response.status_code == 201:
-                    # Realizar una solicitud adicional para obtener el ID de la subprueba recién creada
+                    # Obtener el ID de la subprueba recién creada
                     response = requests.get(f'http://localhost:5000/subpruebas')
                     if response.status_code == 200:
                         subpruebas = response.json()
-                        subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == subprueba_nombre.lower() and sp['id_prueba'] == prueba_id), None)
+                        subprueba_id = next(
+                            (sp['id'] for sp in subpruebas if sp['nombre'].lower() == subprueba_nombre.lower() and sp['id_prueba'] == prueba_id),
+                            None
+                        )
                         if subprueba_id:
                             print(f"Subprueba '{subprueba_nombre}' registrada exitosamente con ID {subprueba_id}.")
                         else:
-                            print(f"Error: No se pudo encontrar el ID de la subprueba '{subprueba_nombre}' después de crearla.")
+                            print(f"No se encontró el ID de la subprueba '{subprueba_nombre}' después de registrarla.")
                             continue
                     else:
-                        print(f"Error al obtener las subpruebas después de crear '{subprueba_nombre}': {response.status_code}")
+                        print(f"Error al obtener subpruebas después de crear '{subprueba_nombre}': {response.status_code}")
                         continue
                 else:
                     print(f"Error al registrar la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
@@ -181,7 +254,10 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                 "id_prueba": prueba_id,
                 "id_subprueba": subprueba_id,
                 "puntaje": puntaje,
-                "escalar": escalar
+                "media" : None,
+                "desviacion_estandar" : None,
+                "escalar": ", ".join(escalar_values),  # Guardar como string separado por comas
+                "interpretacion": None
             }
 
             if response.status_code == 404:
@@ -260,26 +336,27 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         title_label.setFont(QFont('Arial', 16, QFont.Bold))
         title_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
         layout.addWidget(title_label)
- 
-        table_layout = QGridLayout()
+
+        # Crear el layout de la tabla
+        self.table_layout = QGridLayout()  # Asegurarse de que self.table_layout esté disponible en toda la clase
         headers = ["PRUEBAS", "PUNTUACIÓN NATURAL", "PUNTUACIÓN ESCALAR", "PUNTUACIÓN ESCALAR TOTAL"]
- 
+
         # Agregar encabezados a la tabla
         for col, header in enumerate(headers):
             header_label = QLabel(header)
             header_label.setFont(QFont('Arial', 14, QFont.Bold))
             header_label.setStyleSheet("color: white; background-color: #4A90E2; padding: 10px; border-radius: 5px;")
             header_label.setAlignment(Qt.AlignCenter)
-            table_layout.addWidget(header_label, 0, col)
- 
+            self.table_layout.addWidget(header_label, 0, col)
+
         # Agregar filas de pruebas
         for row, test in enumerate(tests, start=1):
             # Nombre de la prueba
             test_label = QLabel(test)
             test_label.setAlignment(Qt.AlignCenter)
             test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
-            table_layout.addWidget(test_label, row, 0)
- 
+            self.table_layout.addWidget(test_label, row, 0)
+
             # Campo de PUNTUACIÓN NATURAL
             natural_input = QLineEdit()
             natural_input.setFixedSize(100, 35)
@@ -291,16 +368,16 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                     padding: 5px;
                 }
             """)
-            natural_layout = QHBoxLayout()
-            natural_layout.addStretch()
-            natural_layout.addWidget(natural_input)
-            natural_layout.addStretch()
-            table_layout.addLayout(natural_layout, row, 1)
- 
+            self.table_layout.addWidget(natural_input, row, 1)
+
             # PUNTUACIÓN ESCALAR - con 4 rectángulos pequeños
             escalar_layout = self.crear_rectangulos_puntuacion_escalar(row - 1)
-            table_layout.addLayout(escalar_layout, row, 2)
- 
+
+            # Asegúrate de colocar el layout de forma correcta
+            container_widget = QWidget()
+            container_widget.setLayout(escalar_layout)
+            self.table_layout.addWidget(container_widget, row, 2)
+
             # Campo de PUNTUACIÓN ESCALAR TOTAL
             total_input = QLineEdit()
             total_input.setFixedSize(100, 35)
@@ -312,79 +389,10 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                     padding: 5px;
                 }
             """)
-            total_layout = QHBoxLayout()
-            total_layout.addStretch()
-            total_layout.addWidget(total_input)
-            total_layout.addStretch()
-            table_layout.addLayout(total_layout, row, 3)
- 
-        # Añadir el título "SUMA DE PUNTUACIONES ESCALARES"
-        total_label = QLabel("SUMA DE PUNTUACIONES ESCALARES")
-        total_label.setFont(QFont('Arial', 14, QFont.Bold))
-        total_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
-        total_label.setAlignment(Qt.AlignCenter)
-        table_layout.addWidget(total_label, len(tests) + 1, 0, 1, 4)
- 
-        # Subtítulos y recuadros de puntuación escalar adicionales
-        total_escalar_layout = QHBoxLayout()
-        subtitulos = ["VERBAL", "PERCEPTUAL", "MEMORIA", "VELOCIDAD"]
- 
-        for subtitulo in subtitulos:
-            columna_layout = QVBoxLayout()
-            columna_layout.setAlignment(Qt.AlignCenter)
- 
-            subtitulo_label = QLabel(subtitulo)
-            subtitulo_label.setAlignment(Qt.AlignCenter)
-            subtitulo_label.setProperty("subtitulo", True)
-            subtitulo_label.setStyleSheet("color: black; padding: 2px;")
- 
-            total_escalar_input = QLineEdit()
-            total_escalar_input.setFixedSize(40, 35)
-            total_escalar_input.setAlignment(Qt.AlignCenter)
-            total_escalar_input.setStyleSheet("""
-                QLineEdit {
-                    border: 1px solid black;
-                    border-radius: 5px;
-                    padding: 5px;
-                }
-            """)
- 
-            columna_layout.addWidget(subtitulo_label)
-            columna_layout.addWidget(total_escalar_input)
-            total_escalar_layout.addLayout(columna_layout)
- 
-        total_escalar_layout.setSpacing(5)
-        table_layout.addLayout(total_escalar_layout, len(tests) + 2, 2, alignment=Qt.AlignCenter)
- 
-        # Añadir subtítulo y recuadro adicional para CI TOTAL debajo de la columna "Puntuación Escalar Total"
-        extra_total_layout = QVBoxLayout()
-        extra_total_label = QLabel("CI TOTAL")
-        extra_total_label.setAlignment(Qt.AlignCenter)
-        extra_total_label.setProperty("subtitulo", True)
-        extra_total_label.setStyleSheet("color: black; padding: 2px;")
- 
-        extra_total_input = QLineEdit()
-        extra_total_input.setFixedSize(100, 35)
-        extra_total_input.setAlignment(Qt.AlignCenter)
-        extra_total_input.setStyleSheet("""
-            QLineEdit {
-                border: 1px solid black;
-                border-radius: 5px;
-                padding: 5px;
-            }
-        """)
- 
-        extra_total_layout.addWidget(extra_total_label)
-        extra_total_layout.addWidget(extra_total_input)
-        table_layout.addLayout(extra_total_layout, len(tests) + 2, 3, alignment=Qt.AlignCenter)
- 
-        # Añadir título "CONVERSIÓN DE LA SUMA DE PUNTUACIONES ESCALARES A PUNTUACIONES COMPUESTAS"
-        total_label.setFont(QFont('Arial', 14, QFont.Bold))
-        total_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
-        total_label.setAlignment(Qt.AlignCenter)
-        table_layout.addWidget(total_label, len(tests) + 1, 0, 1, 4)
-        layout.addLayout(table_layout)
-   
+            self.table_layout.addWidget(total_input, row, 3)
+
+        layout.addLayout(self.table_layout)
+
     def add_conversion(self, title, tests, layout):
         """Función para agregar una tabla con las conversiones de las pruebas."""
         title_label = QLabel(title)
