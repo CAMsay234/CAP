@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
+import threading
 
 class PruebaAtencionConcentracionWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
@@ -284,55 +285,39 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         self.close()  # Cerrar la ventana actual
 
     def guardar_prueba(self):
-        # Obtener el nombre de la prueba desde el título de la ventana
-        prueba_nombre = self.windowTitle().replace("Prueba ", "")
-    
-        # Obtener el ID de la prueba desde la API
-        response = requests.get('http://localhost:5000/pruebas')
-        if response.status_code != 200:
-            print("Error al obtener las pruebas")
-            return
-    
-        pruebas = response.json()
-        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
-        if prueba_id is None:
-            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
-            return
-    
-        # Recorrer cada fila de subpruebas y obtener sus valores
-        for row in range(1, self.table_layout.rowCount()):
+        def procesar_subprueba(row):
             widget = self.table_layout.itemAtPosition(row, 0).widget()
             if isinstance(widget, QLineEdit):
                 subprueba_nombre = widget.text().strip()
             else:
                 subprueba_nombre = widget.text().strip()
-    
+            
             puntaje = self.table_layout.itemAtPosition(row, 1).widget().text().strip() or None
             media = self.table_layout.itemAtPosition(row, 2).widget().text().strip() or None
             ds = self.table_layout.itemAtPosition(row, 3).widget().text().strip() or None
             interpretacion = self.table_layout.itemAtPosition(row, 4).widget().text().strip()
-    
+        
             # Verificar que el campo de interpretación esté completo
             if not interpretacion:
                 print(f"Faltan datos para la subprueba '{subprueba_nombre}'.")
-                continue
-    
+                return
+        
             # Manejar subpruebas con el nombre "Tiempo"
             if subprueba_nombre == "Tiempo":
                 if row == 8:  # Primera ocurrencia de "Tiempo"
                     subprueba_nombre = "Tachado de cuadros Tiempo"
                 elif row == 12:  # Segunda ocurrencia de "Tiempo"
                     subprueba_nombre = "Test de rastreos de Caminos A. Tiempo"
-    
+        
             # Verificar si la subprueba existe en la base de datos
             response = requests.get(f'http://localhost:5000/subpruebas')
             if response.status_code != 200:
                 print(f"Error al obtener las subpruebas para la prueba '{subprueba_nombre}'.")
-                continue
-    
+                return
+        
             subpruebas = response.json()
             subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == subprueba_nombre.lower() and sp['id_prueba'] == prueba_id), None)
-    
+        
             # Registrar la subprueba si no existe
             if subprueba_id is None:
                 data_subprueba = {
@@ -350,18 +335,18 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                             print(f"Subprueba '{subprueba_nombre}' registrada exitosamente con ID {subprueba_id}.")
                         else:
                             print(f"Error: No se pudo encontrar el ID de la subprueba '{subprueba_nombre}' después de crearla.")
-                            continue
+                            return
                     else:
                         print(f"Error al obtener las subpruebas después de crear '{subprueba_nombre}': {response.status_code}")
-                        continue
+                        return
                 else:
                     print(f"Error al registrar la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
-                    continue
-    
+                    return
+        
             # Verificar si ya existe una evaluación para esta combinación de valores
             check_url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}"
             response = requests.get(check_url)
-    
+        
             data = {
                 "codigo_hc": self.paciente_seleccionado['codigo_hc'],
                 "id_prueba": prueba_id,
@@ -369,9 +354,10 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 "puntaje": puntaje,
                 "media": media,
                 "desviacion_estandar": ds,
+                "escalar":None,
                 "interpretacion": interpretacion
             }
-    
+        
             if response.status_code == 404:
                 # No existe, realizar un INSERT
                 response = requests.post('http://localhost:5000/evaluaciones', json=data)
@@ -388,28 +374,38 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                     print(f"Error al actualizar los resultados para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
             else:
                 print(f"Error al verificar la evaluación para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
-
-    def guardar_comentarios(self):
+    
         # Obtener el nombre de la prueba desde el título de la ventana
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
-
+        
         # Obtener el ID de la prueba desde la API
         response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas")
             return
-
+        
         pruebas = response.json()
         prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
         if prueba_id is None:
-            print("Prueba no encontrada en la base de datos.")
+            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
             return
-
-        # Recorrer cada comentario y obtener sus valores
-        for i in range(self.comment_layout.rowCount()):
+        
+        # Crear y empezar hilos para cada subprueba
+        threads = []
+        for row in range(1, self.table_layout.rowCount()):  # Excluir la fila "Total"
+            thread = threading.Thread(target=procesar_subprueba, args=(row,))
+            threads.append(thread)
+            thread.start()
+        
+        # Esperar a que todos los hilos terminen
+        for thread in threads:
+            thread.join()
+   
+    def guardar_comentarios(self):
+        def procesar_comentario(i):
             comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()
             comment_text = self.comment_layout.itemAtPosition(i, 1).widget().toPlainText()
-
+    
             # Guardar los comentarios en la base de datos
             data = {
                 "codigo_hc": self.paciente_seleccionado['codigo_hc'],  # Usar el código del paciente seleccionado
@@ -420,38 +416,64 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
             response = requests.post('http://localhost:5000/comentarios', json=data)
             if response.status_code != 201:
                 print(f"Error al guardar el comentario '{comment_label}'")
-
-        print("Comentarios guardados exitosamente")
-
-    def guardar_conclusion(self):
+    
         # Obtener el nombre de la prueba desde el título de la ventana
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
-
+    
         # Obtener el ID de la prueba desde la API
         response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas")
             return
-
+    
         pruebas = response.json()
         prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
         if prueba_id is None:
             print("Prueba no encontrada en la base de datos.")
             return
+    
+        # Crear y empezar hilos para cada comentario
+        threads = []
+        for i in range(self.comment_layout.rowCount()):
+            thread = threading.Thread(target=procesar_comentario, args=(i,))
+            threads.append(thread)
+            thread.start()
+    
+        # Esperar a que todos los hilos terminen
+        for thread in threads:
+            thread.join()
+    
+        print("Comentarios guardados exitosamente")
 
-        # Guardar la conclusión como un comentario adicional
-        conclusion_text = self.conclusion_text_edit.toPlainText()
-        data = {
-            "codigo_hc": self.paciente_seleccionado['codigo_hc'],
-            "id_prueba": prueba_id,
-            "tipo_comentario": "Conclusión",
-            "comentario": conclusion_text
-        }
-        response = requests.post('http://localhost:5000/comentarios', json=data)
-        if response.status_code != 201:
-            print("Error al guardar la conclusión")
-
-        print("Conclusión guardada exitosamente")
+    def guardar_conclusion(self):
+        try:
+            # Obtener el nombre de la prueba desde el título de la ventana
+            prueba_nombre = self.windowTitle().replace("Prueba ", "")
+            
+            # Obtener el ID de la prueba desde la API
+            response = requests.get('http://localhost:5000/pruebas')
+            response.raise_for_status()  # Lanza una excepción si la solicitud no fue exitosa
+            
+            pruebas = response.json()
+            prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+            if prueba_id is None:
+                print("Prueba no encontrada en la base de datos.")
+                return
+            
+            # Guardar la conclusión como un comentario adicional
+            conclusion_text = self.conclusion_text_edit.toPlainText()
+            data = {
+                "codigo_hc": self.paciente_seleccionado['codigo_hc'],
+                "id_prueba": prueba_id,
+                "tipo_comentario": "Conclusión",
+                "comentario": conclusion_text
+            }
+            response = requests.post('http://localhost:5000/comentarios', json=data)
+            response.raise_for_status()  # Lanza una excepción si la solicitud no fue exitosa
+            
+            print("Conclusión guardada exitosamente")
+        except requests.exceptions.RequestException as e:
+            print(f"Error al guardar la conclusión: {e}")
 
     def guardar_todo(self):
         self.guardar_prueba()

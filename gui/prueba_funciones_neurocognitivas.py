@@ -5,8 +5,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
-import  requests  # Importar el módulo para trabajar con bases de datos SQLite
-
+import requests  # Importar el módulo para trabajar con bases de datos SQLite
+import threading
 
 class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
@@ -197,31 +197,15 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
         self.conclusion_text_edit.setStyleSheet("border: 1px solid black;")
         self.conclusion_text_edit.setFixedHeight(150)  # Ajustar altura fija
         layout.addWidget(self.conclusion_text_edit)
-    
+
     def guardar_prueba(self):
-        # Obtener el nombre de la prueba desde el título de la ventana
-        prueba_nombre = self.windowTitle().replace("Prueba ", "")
-        
-        # Obtener el ID de la prueba desde la API
-        response = requests.get('http://localhost:5000/pruebas')
-        if response.status_code != 200:
-            print("Error al obtener las pruebas")
-            return
-        
-        pruebas = response.json()
-        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
-        if prueba_id is None:
-            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
-            return
-        
-        # Recorrer cada fila de subpruebas y obtener sus valores
-        for row in range(1, self.table_layout.rowCount()):
+        def procesar_subprueba(row):
             widget = self.table_layout.itemAtPosition(row, 0).widget()
             if isinstance(widget, QLineEdit):
                 subprueba_nombre = widget.text().strip()
             else:
                 subprueba_nombre = widget.text().strip()
-        
+            
             puntaje_widget = self.table_layout.itemAtPosition(row, 1)
             interpretacion_widget = self.table_layout.itemAtPosition(row, 2)
             
@@ -231,13 +215,13 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
             # Verificar que los campos obligatorios estén completos
             if not puntaje or not interpretacion:
                 print(f"Faltan datos obligatorios para la subprueba '{subprueba_nombre}'.")
-                continue
+                return
         
             # Verificar si la subprueba existe en la base de datos
             response = requests.get(f'http://localhost:5000/subpruebas')
             if response.status_code != 200:
                 print(f"Error al obtener las subpruebas para la prueba '{subprueba_nombre}'.")
-                continue
+                return
         
             subpruebas = response.json()
             subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == subprueba_nombre.lower() and sp['id_prueba'] == prueba_id), None)
@@ -259,13 +243,13 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
                             print(f"Subprueba '{subprueba_nombre}' registrada exitosamente con ID {subprueba_id}.")
                         else:
                             print(f"Error: No se pudo encontrar el ID de la subprueba '{subprueba_nombre}' después de crearla.")
-                            continue
+                            return
                     else:
                         print(f"Error al obtener las subpruebas después de crear '{subprueba_nombre}': {response.status_code}")
-                        continue
+                        return
                 else:
                     print(f"Error al registrar la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
-                    continue
+                    return
         
             # Verificar si ya existe una evaluación para esta combinación de valores
             check_url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}"
@@ -298,8 +282,49 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
                     print(f"Error al actualizar los resultados para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
             else:
                 print(f"Error al verificar la evaluación para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
-    
+
+        # Obtener el nombre de la prueba desde el título de la ventana
+        prueba_nombre = self.windowTitle().replace("Prueba ", "")
+        
+        # Obtener el ID de la prueba desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+        
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+        if prueba_id is None:
+            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
+            return
+        
+        # Crear y empezar hilos para cada subprueba
+        threads = []
+        for row in range(1, self.table_layout.rowCount()):  # Excluir la fila "Total"
+            thread = threading.Thread(target=procesar_subprueba, args=(row,))
+            threads.append(thread)
+            thread.start()
+        
+        # Esperar a que todos los hilos terminen
+        for thread in threads:
+            thread.join()
+
     def guardar_comentarios(self):
+        def procesar_comentario(i):
+            comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()
+            comment_text = self.comment_layout.itemAtPosition(i, 1).widget().toPlainText()
+
+            # Guardar los comentarios en la base de datos
+            data = {
+                "codigo_hc": self.paciente_seleccionado['codigo_hc'],  # Usar el código del paciente seleccionado
+                "id_prueba": prueba_id,
+                "tipo_comentario": comment_label,
+                "comentario": comment_text
+            }
+            response = requests.post('http://localhost:5000/comentarios', json=data)
+            if response.status_code != 201:
+                print(f"Error al guardar el comentario '{comment_label}'")
+
         # Obtener el nombre de la prueba desde el título de la ventana
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
 
@@ -315,21 +340,16 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
             print("Prueba no encontrada en la base de datos.")
             return
 
-        # Recorrer cada comentario y obtener sus valores
+        # Crear y empezar hilos para cada comentario
+        threads = []
         for i in range(self.comment_layout.rowCount()):
-            comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()
-            comment_text = self.comment_layout.itemAtPosition(i, 1).widget().toPlainText()
+            thread = threading.Thread(target=procesar_comentario, args=(i,))
+            threads.append(thread)
+            thread.start()
 
-            # Guardar los comentarios en la base de datos
-            data = {
-                "codigo_hc": self.paciente_seleccionado['codigo_hc'],  # Usar el código del paciente seleccionado
-                "id_prueba": prueba_id,
-                "tipo_comentario": comment_label,
-                "comentario": comment_text
-            }
-            response = requests.post('http://localhost:5000/comentarios', json=data)
-            if response.status_code != 201:
-                print(f"Error al guardar el comentario '{comment_label}'")
+        # Esperar a que todos los hilos terminen
+        for thread in threads:
+            thread.join()
 
         print("Comentarios guardados exitosamente")
     
