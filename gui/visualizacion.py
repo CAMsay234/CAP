@@ -1,149 +1,135 @@
 import sys
 import os
+import requests
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QPushButton, QGridLayout
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
+    QWidget, QLabel, QFrame
 )
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
-
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class VisualizacionWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
         super().__init__()
         self.paciente_seleccionado = paciente_seleccionado
-        # Configurar la ventana
-        self.setWindowTitle("Visualizaciones")
-        self.showMaximized()  # Abrir la ventana maximizada
-        self.setStyleSheet("background-color: white;")  # Fondo blanco
 
-        # Crear el widget central
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
+        # Configurar ventana
+        self.setWindowTitle("Visualización Capacidad Intelectual")
+        self.setGeometry(100, 100, 1000, 700)  # Tamaño controlado
 
-        # ---- LATERAL IZQUIERDO CON NÚMEROS ----
-        self.crear_lateral_izquierdo(main_layout)
+        # Crear widget principal y layout
+        main_widget = QWidget(self)
+        main_layout = QVBoxLayout(main_widget)
+        self.setCentralWidget(main_widget)
 
-        # Crear el scroll
-        scroll = QScrollArea(self)
-        scroll_widget = QWidget()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(scroll_widget)
-        scroll_layout = QVBoxLayout(scroll_widget)
+        # Encabezado con logo y título
+        header_layout = self.create_header()
+        main_layout.addLayout(header_layout)
 
-        # ---- BARRA AZUL SUPERIOR ----
-        header_background = QWidget()
-        header_background.setFixedHeight(100)  # Fijamos altura de la barra azul
-        header_background.setStyleSheet("background-color: #005BBB;")
-        header_layout = QHBoxLayout(header_background)
-        header_layout.setContentsMargins(10, 0, 10, 0)
-        header_layout.setSpacing(20)
+        # Recuadro para la gráfica
+        graph_frame = QFrame()
+        graph_frame.setStyleSheet("border: 2px solid #005BBB; background-color: #F0F0F0;")
+        graph_layout = QVBoxLayout(graph_frame)
+        
+        # Añadir gráfica
+        self.add_graph(graph_layout)
 
-        # Logo UPB
-        image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
-        self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Tamaño ajustado
-        self.logo.setPixmap(pixmap)
-        header_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
+        # Añadir recuadro al layout principal
+        main_layout.addWidget(graph_frame)
 
-        # Título de la ventana
-        self.title = QLabel("VISUALIZACIONES")
-        self.title.setFont(QFont('Arial', 24, QFont.Bold))
-        self.title.setStyleSheet("color: white;")
-        header_layout.addWidget(self.title, alignment=Qt.AlignCenter)
+    def create_header(self):
+        """Crea el encabezado con logo y título."""
+        header_layout = QHBoxLayout()
 
-        # Campo de código del paciente
-        self.codigo_label = QLabel(f"Código: {self.paciente_seleccionado['codigo_hc']}")
-        self.codigo_label.setFont(QFont('Arial', 14))
-        self.codigo_label.setStyleSheet("color: white;")
-        header_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
+        # Logo
+        logo_label = QLabel()
+        logo_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
+        pixmap = QPixmap(logo_path).scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logo_label.setPixmap(pixmap)
+        header_layout.addWidget(logo_label)
 
-        # Botón Volver
-        self.boton_volver = QPushButton("VOLVER")
-        self.boton_volver.setFixedSize(80, 30)
-        self.boton_volver.setStyleSheet(self.boton_style())
-        self.boton_volver.clicked.connect(self.abrir_evaluacion_neuropsicologica)
-        header_layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
+        # Título
+        title = QLabel("VISUALIZACIÓN CAPACIDAD INTELECTUAL")
+        title.setFont(QFont('Arial', 20, QFont.Bold))
+        title.setStyleSheet("color: #005BBB;")
+        header_layout.addWidget(title, alignment=Qt.AlignCenter)
 
-        # Botón Guardar
-        self.boton_guardar = QPushButton("GUARDAR")
-        self.boton_guardar.setFixedSize(80, 30)
-        self.boton_guardar.setStyleSheet(self.boton_style())
-        header_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
+        return header_layout
 
-        # Agregar la barra azul al layout principal
-        scroll_layout.addWidget(header_background)
+    def add_graph(self, layout):
+        """Genera y agrega la gráfica."""
+        puntuaciones = self.obtener_puntuaciones()
+        if not puntuaciones:
+            print("No se encontraron puntuaciones.")
+            return
 
-        # ---- TÍTULO DE LA GRÁFICA ----
-        grafica_title = QLabel("PERFIL DE PUNTUACIONES ESCALARES DE LAS SUBPRUEBAS")
-        grafica_title.setFont(QFont('Arial', 16, QFont.Bold))
-        grafica_title.setStyleSheet("background-color: #B0C4DE; padding: 10px; border-radius: 5px;")
-        grafica_title.setAlignment(Qt.AlignCenter)
-        grafica_title.setFixedHeight(50)  # Fijamos la altura del título
-        scroll_layout.addWidget(grafica_title)
+        # Crear figura y gráfica
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.set_ylim(1, 19)
+        ax.set_yticks(range(1, 20))
 
-        # ---- SEPARACIÓN DE LAS SECCIONES SUPERIORES ----
-        self.crear_secciones_superiores(scroll_layout)
+        for categoria, subpruebas in puntuaciones.items():
+            labels = list(subpruebas.keys())
+            scores = list(subpruebas.values())
+            ax.plot(labels, scores, marker='o', label=categoria)
 
-        main_layout.addWidget(scroll)
+        ax.set_title("Perfil de Puntuaciones", fontsize=14)
+        ax.set_xlabel("Subpruebas", fontsize=12)
+        ax.set_ylabel("Puntuación", fontsize=12)
+        ax.legend(loc='upper right')
+        ax.grid(True, linestyle='--', alpha=0.7)
 
-    def boton_style(self):
-        """Estilo para los botones."""
-        return """
-            QPushButton {
-                background-color: white;
-                border: 1px solid #005BBB;
-                border-radius: 5px;
-                color: #005BBB;
-                font-size: 12px;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-        """
+        # Integrar gráfica en el layout de PyQt
+        canvas = FigureCanvas(fig)
+        layout.addWidget(canvas)
 
-    def abrir_evaluacion_neuropsicologica(self):
-        """Abrir la ventana de evaluación neuropsicológica."""
-        print("Volviendo a la evaluación neuropsicológica...")
-        self.close()
+    def obtener_puntuaciones(self):
+        """Obtiene las puntuaciones desde la API."""
+        url = f'http://localhost:5000/evaluaciones/{self.paciente_seleccionado["codigo_hc"]}/6'
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
 
-    def crear_secciones_superiores(self, layout):
-        """Crear las secciones superiores con recuadros."""
-        secciones = ["Comprensión Verbal", "Razonamiento Perceptual", "Memoria de Trabajo", "Velocidad de Procesamiento"]
-        secciones_layout = QHBoxLayout()
-        secciones_layout.setSpacing(10)
+                categorias = {
+                    "Comprensión Verbal": ["SEMEJANZAS", "VOCABULARIO", "INFORMACIÓN", "COMPRENSIÓN"],
+                    "Razonamiento Perceptual": ["DISEÑO CON CUBOS", "MATRICES", "ROMPECABEZAS VISUAL",
+                                                "PESO FIGURADO", "FIGURAS INCOMPLETAS"],
+                    "Memoria de Trabajo": ["RETENCIÓN DE DÍGITOS", "ARITMÉTICA", "SUCESIÓN DE NÚMEROS Y LETRAS"],
+                    "Velocidad de Procesamiento": ["BÚSQUEDA DE SÍMBOLOS", "CLAVES", "CANCELACIÓN"]
+                }
 
-        for seccion in secciones:
-            label = QLabel(seccion)
-            label.setFont(QFont('Arial', 10, QFont.Bold))
-            label.setStyleSheet("background-color: #E0E0E0; padding: 5px; border-radius: 5px;")
-            label.setAlignment(Qt.AlignCenter)
-            secciones_layout.addWidget(label)
+                subpruebas_map = {
+                    1: "SEMEJANZAS", 2: "VOCABULARIO", 3: "INFORMACIÓN", 4: "COMPRENSIÓN",
+                    5: "DISEÑO CON CUBOS", 6: "MATRICES", 7: "ROMPECABEZAS VISUAL",
+                    8: "PESO FIGURADO", 9: "FIGURAS INCOMPLETAS", 10: "RETENCIÓN DE DÍGITOS",
+                    11: "ARITMÉTICA", 12: "SUCESIÓN DE NÚMEROS Y LETRAS", 13: "BÚSQUEDA DE SÍMBOLOS",
+                    14: "CLAVES", 15: "CANCELACIÓN"
+                }
 
-        layout.addLayout(secciones_layout)
+                puntuaciones = {cat: {} for cat in categorias}
+                for evaluacion in data:
+                    subprueba = subpruebas_map.get(evaluacion['id_subprueba'], "Desconocido")
+                    escalar = int(evaluacion['escalar'])
 
-    def crear_lateral_izquierdo(self, layout):
-        """Crear los recuadros de la parte lateral izquierda con los números correspondientes."""
-        lateral_widget = QWidget()
-        lateral_layout = QVBoxLayout(lateral_widget)
-        lateral_layout.setSpacing(5)
+                    for categoria, subpruebas in categorias.items():
+                        if subprueba in subpruebas:
+                            puntuaciones[categoria][subprueba] = escalar
 
-        # Añadir los números en el lateral izquierdo (de 19 a 1)
-        for i in range(19, 0, -1):
-            label = QLabel(str(i))
-            label.setFont(QFont('Arial', 10))
-            label.setAlignment(Qt.AlignCenter)
-            label.setStyleSheet("background-color: #F0F0F0; padding: 3px; border: 1px solid #C0C0C0; border-radius: 3px;")
-            lateral_layout.addWidget(label)
+                return puntuaciones
+            else:
+                print(f"Error {response.status_code}: {response.text}")
+                return {}
+        except requests.exceptions.RequestException as e:
+            print(f"Error al conectar con la API: {e}")
+            return {}
 
-        layout.addWidget(lateral_widget, alignment=Qt.AlignLeft)
-
-
-# Función para ejecutar la aplicación
+# Ejecutar la aplicación
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    paciente = {'codigo_hc': '12345'}  # Ejemplo de datos del paciente
+    paciente = {"codigo_hc": 1, "nombre": "Luisa Flórez"}
     window = VisualizacionWindow(paciente)
     window.show()
     sys.exit(app.exec_())
