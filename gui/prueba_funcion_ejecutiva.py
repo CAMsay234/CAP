@@ -265,7 +265,7 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
                 "puntaje": puntaje,
                 "media": media,  # Campo opcional
                 "desviacion_estandar": ds,  # Campo opcional
-                "escalar": None,  # Campo opcional
+                "escalar": "N/A",  # Campo opcional
                 "interpretacion": interpretacion
             }
         

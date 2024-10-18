@@ -260,9 +260,9 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
                 "id_prueba": prueba_id,
                 "id_subprueba": subprueba_id,
                 "puntaje": puntaje,
-                "media": None,  # Campo opcional
-                "desviacion_estandar": None,  # Campo opcional
-                "escalar": None,  # Campo opcional
+                "media": "N/A",  # Campo opcional
+                "desviacion_estandar": "N/A",  # Campo opcional
+                "escalar": "N/A",  # Campo opcional
                 "interpretacion": interpretacion
             }
         

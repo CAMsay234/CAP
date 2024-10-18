@@ -354,7 +354,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 "puntaje": puntaje,
                 "media": media,
                 "desviacion_estandar": ds,
-                "escalar":None,
+                "escalar":"N/A",
                 "interpretacion": interpretacion
             }
         
