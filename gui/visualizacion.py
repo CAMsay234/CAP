@@ -12,7 +12,7 @@ class VisualizacionWindow(QMainWindow):
 
         # Configuración de la ventana principal
         self.setWindowTitle("Visualización Capacidad Intelectual")
-        self.setGeometry(100, 100, 800, 600)  # Tamaño manejable y seguro
+        self.setGeometry(0, 0, 1800, 697) # Tamaño manejable y seguro
 
         # Crear widget principal y layout
         main_widget = QWidget(self)
