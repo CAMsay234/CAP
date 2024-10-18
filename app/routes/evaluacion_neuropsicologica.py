@@ -9,7 +9,7 @@ evaluaciones_bp = Blueprint('evaluaciones', __name__)
 @evaluaciones_bp.route('/evaluaciones', methods=['POST'])
 def crear_evaluacion():
     data = request.get_json()  # Obtener los datos en formato JSON
-    if not data["codigo_hc"] or not data["id_prueba"] or not data["id_subprueba"] or not data["puntaje"] or not data["media"] or not data["desviacion_estandar"] or not data["interpretacion"]:
+    if not data["codigo_hc"] or not data["id_prueba"] or not data["id_subprueba"]:
             return jsonify({"error": "Todos los campos son obligatorios"}), 400
     nueva_evaluacion = EvaluacionNeuropsicologica(
         codigo_hc=data["codigo_hc"],
@@ -18,6 +18,7 @@ def crear_evaluacion():
         puntaje=data["puntaje"],
         media=data["media"],
         desviacion_estandar=data["desviacion_estandar"],
+        escalar=data["escalar"],
         interpretacion=data["interpretacion"]
     )
     
@@ -41,6 +42,7 @@ def obtener_evaluaciones():
         "puntaje": e.puntaje,
         "media": e.media,
         "desviacion_estandar": e.desviacion_estandar,
+        "escalar": e.escalar,
         "interpretacion": e.interpretacion
     } for e in evaluaciones]
     return jsonify(evaluaciones_list), 200
@@ -57,6 +59,7 @@ def obtener_evaluacion(codigo_hc, id_prueba, id_subprueba):
             "puntaje": evaluacion.puntaje,
             "media": evaluacion.media,
             "desviacion_estandar": evaluacion.desviacion_estandar,
+            "escalar": evaluacion.escalar,
             "interpretacion": evaluacion.interpretacion
         }), 200
     else:
@@ -73,6 +76,7 @@ def actualizar_evaluacion(codigo_hc, id_prueba, id_subprueba):
     evaluacion.puntaje = data.get('puntaje', evaluacion.puntaje)
     evaluacion.media = data.get('media', evaluacion.media)
     evaluacion.desviacion_estandar = data.get('desviacion_estandar', evaluacion.desviacion_estandar)
+    evaluacion.escalar = data.get('escalar', evaluacion.escalar)
     evaluacion.interpretacion = data.get('interpretacion', evaluacion.interpretacion)
 
     try:
@@ -96,3 +100,23 @@ def eliminar_evaluacion(codigo_hc, id_prueba, id_subprueba):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+# Obtener evaluaciones específicas por codigo_hc y id_prueba (GET)
+@evaluaciones_bp.route('/evaluaciones/<codigo_hc>/<id_prueba>', methods=['GET'])
+def obtener_evaluaciones_por_codigo_y_prueba(codigo_hc, id_prueba):
+    evaluaciones = EvaluacionNeuropsicologica.query.filter_by(codigo_hc=codigo_hc, id_prueba=id_prueba).all()
+    if not evaluaciones:
+        return jsonify({"message": "No se encontraron evaluaciones para este paciente y prueba."}), 404
+
+    evaluaciones_list = [{
+        "codigo_hc": e.codigo_hc,
+        "id_prueba": e.id_prueba,
+        "id_subprueba": e.id_subprueba,
+        "puntaje": e.puntaje,
+        "media": e.media,
+        "desviacion_estandar": e.desviacion_estandar,
+        "escalar": e.escalar,
+        "interpretacion": e.interpretacion
+    } for e in evaluaciones]
+
+    return jsonify(evaluaciones_list), 200

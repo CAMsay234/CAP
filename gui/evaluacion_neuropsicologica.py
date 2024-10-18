@@ -1,8 +1,8 @@
-from PyQt5.QtWidgets import QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSpacerItem, QSizePolicy, QGridLayout
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtCore import Qt
-import sys
 import os
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy, QWidget, QLineEdit, QGridLayout
+from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtCore import Qt, QRect
+
 class EvaluacionNeuropsicologicaWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
         super().__init__()
@@ -10,8 +10,11 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         self.paciente_seleccionado = paciente_seleccionado
         # Configurar la ventana
         self.setWindowTitle(f"Evaluación Neuropsicológica de {self.paciente_seleccionado['nombre']}")
-        self.showMaximized()  # Abrir la ventana maximizada
         self.setStyleSheet("background-color: white;")  # Fondo blanco
+
+        # Establecer una geometría inicial más proporcional
+        self.setGeometry(QRect(100, 100, 700, 500))
+        self.showMaximized()  # Abrir la ventana maximizada
 
         # Crear el layout principal
         main_layout = QVBoxLayout()
@@ -31,25 +34,25 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Ajustar el tamaño del logo
         self.logo.setPixmap(pixmap)
         header_background_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
-
+        
         # Campos de Código y Nombre del paciente
         self.label_codigo = QLabel(f"Código: {self.paciente_seleccionado['codigo_hc']}")
         self.label_codigo.setFont(QFont('Arial', 14))
         self.input_codigo = QLineEdit()
         self.input_codigo.setFixedWidth(100)
-
+        
         self.label_nombre = QLabel(f"Nombre paciente: {self.paciente_seleccionado['nombre']}")
         self.label_nombre.setFont(QFont('Arial', 14))
         self.input_nombre = QLineEdit()
         self.input_nombre.setFixedWidth(300)
-
+        
         # Añadir los campos de código y nombre al banner
         header_background_layout.addWidget(self.label_codigo)
         header_background_layout.addWidget(self.input_codigo)
-        header_background_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
+        header_background_layout.addSpacerItem(QSpacerItem(10, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))  # Reducir el tamaño del espaciador
         header_background_layout.addWidget(self.label_nombre)
         header_background_layout.addWidget(self.input_nombre)
-
+        
         # Botones de "Actualizar Datos Personales" y "Actualizar Historia Clínica" en el banner azul
         self.btn_actualizar_datos = QPushButton("ACTUALIZAR DATOS\nPERSONALES")
         self.btn_actualizar_datos.setMaximumWidth(200)
@@ -81,11 +84,11 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 background-color: #e0e0e0;
             }
         """)
-
+        
         # Conectar los botones con las funciones para abrir las ventanas
         self.btn_actualizar_datos.clicked.connect(self.abrir_ventana_registrar_paciente)
         self.btn_actualizar_historia.clicked.connect(self.abrir_ventana_historia_clinica)
-
+        
         # Agregar los botones al layout del banner
         header_background_layout.addWidget(self.btn_actualizar_datos, alignment=Qt.AlignLeft)
         header_background_layout.addWidget(self.btn_actualizar_historia, alignment=Qt.AlignLeft)
@@ -178,7 +181,7 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             }
         """)
         self.btn_seguimiento.clicked.connect(self.abrir_seguimiento)
-        header_background_layout.addWidget(self.btn_seguimiento, alignment=Qt.AlignRight)
+        bottom_buttons_layout.addWidget(self.btn_seguimiento, alignment=Qt.AlignCenter)
 
         self.btn_diagnostico = QPushButton("DIAGNÓSTICO")
         self.btn_diagnostico.setStyleSheet("""
@@ -192,7 +195,7 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             }
         """)
         self.btn_diagnostico.clicked.connect(self.abrir_diagnostico)
-        header_background_layout.addWidget(self.btn_diagnostico, alignment=Qt.AlignRight)
+        bottom_buttons_layout.addWidget(self.btn_diagnostico, alignment=Qt.AlignCenter)
 
         self.btn_visualizaciones = QPushButton("VISUALIZACIONES")
         self.btn_visualizaciones.setStyleSheet("""
@@ -206,11 +209,6 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             }
         """)
         self.btn_visualizaciones.clicked.connect(self.abrir_visualizacion)
-        header_background_layout.addWidget(self.btn_visualizaciones, alignment=Qt.AlignRight)
-
-        # Agregar los botones inferiores al layout
-        bottom_buttons_layout.addWidget(self.btn_seguimiento, alignment=Qt.AlignCenter)
-        bottom_buttons_layout.addWidget(self.btn_diagnostico, alignment=Qt.AlignCenter)
         bottom_buttons_layout.addWidget(self.btn_visualizaciones, alignment=Qt.AlignCenter)
 
         main_layout.addLayout(bottom_buttons_layout)
@@ -219,6 +217,10 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(main_layout)
         self.setCentralWidget(widget)
+
+        # Forzar la actualización del layout
+        self.updateGeometry()
+        self.repaint()
 
     # Funciones para abrir ventanas específicas
     def abrir_ventana_registrar_paciente(self):
@@ -318,5 +320,9 @@ if __name__ == '__main__':
 
     ventana = EvaluacionNeuropsicologicaWindow(paciente_seleccionado)
     ventana.show()
+
+    # Forzar la actualización del layout
+    ventana.updateGeometry()
+    ventana.repaint()
 
     sys.exit(app.exec_())
