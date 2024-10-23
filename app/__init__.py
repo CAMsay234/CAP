@@ -25,6 +25,7 @@ def create_app():
     from app.models.diagnostico import Diagnostico
     from app.models.seguimiento import Seguimiento
     from app.models.usuario import Usuario
+    from app.models.conversion import Conversion
     # Agrega todas las importaciones de modelos necesarias
 
     # Registrar los blueprints de las rutas
@@ -52,6 +53,10 @@ def create_app():
     app.register_blueprint(diagnosticos_bp)
     from app.routes.auth import auth_bp
     app.register_blueprint(auth_bp)
+    from app.routes.seguimiento import seguimientos_bp
+    app.register_blueprint(seguimientos_bp)
+    from app.routes.conversion import conversiones_bp
+    app.register_blueprint(conversiones_bp)
 
     return app
 
