@@ -134,13 +134,16 @@ def load_stylesheet(app):
     with open(stylesheet_path, "r") as file:
         app.setStyleSheet(file.read())
 
+
 # Ejecutar la aplicación
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     load_stylesheet(app)
 
     ventana = LoginWindow()
-    ventana.showMaximized()
+    ventana.showFullScreen()  # Cambiar a showFullScreen()
 
     sys.exit(app.exec_())
 
