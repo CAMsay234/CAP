@@ -1,11 +1,12 @@
 import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit, QMessageBox
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit, QMessageBox, QSpacerItem, QSizePolicy
 )
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 from PyQt5.QtCore import Qt
 import requests
+from datetime import datetime, date
 
 class SeguimientoWindow(QMainWindow): 
     def __init__(self, paciente_seleccionado):
@@ -13,9 +14,12 @@ class SeguimientoWindow(QMainWindow):
         self.paciente_seleccionado = paciente_seleccionado
 
         # Configurar la ventana
-        self.setWindowTitle("Seguimiento")
+        self.setWindowTitle(f"Seguimiento de {self.paciente_seleccionado['nombre']}")
         self.showMaximized()  # Abrir la ventana maximizada
         self.setStyleSheet("background-color: white;")  # Fondo blanco
+
+        # Crear el layout principal
+        main_layout = QVBoxLayout()
 
         # Crear el scroll
         scroll = QScrollArea(self)
@@ -42,19 +46,14 @@ class SeguimientoWindow(QMainWindow):
         self.title.setStyleSheet("color: white;")
         header_background_layout.addWidget(self.title, alignment=Qt.AlignCenter)
 
-        # Campo de código
-        self.codigo_label = QLabel(f"Código:{self.paciente_seleccionado['codigo_hc']}")
-        self.codigo_label.setFont(QFont('Arial', 10))  # Reducir el tamaño de la fuente
-        self.codigo_input = QLabel()
-        self.codigo_input.setFixedWidth(100)
-        codigo_layout = QHBoxLayout()  # Definir el layout antes de usarlo
-        codigo_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
-        codigo_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
-        self.codigo_input.setFont(QFont('Arial', 10))  # Reducir el tamaño de la fuente para el valor del código
-        header_background_layout.addLayout(codigo_layout)
-
-        header_layout.addWidget(header_background)
-        main_layout.addLayout(header_layout)
+        # Información del paciente en el banner
+        self.label_codigo = QLabel(f"Código: {self.paciente_seleccionado['codigo_hc']}")
+        self.label_codigo.setFont(QFont('Arial', 14))
+        self.label_nombre = QLabel(f"Nombre paciente: {self.paciente_seleccionado['nombre']}")
+        self.label_nombre.setFont(QFont('Arial', 14))
+        header_background_layout.addWidget(self.label_codigo, alignment=Qt.AlignRight)
+        header_background_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))  # Añadir espacio entre código y nombre
+        header_background_layout.addWidget(self.label_nombre, alignment=Qt.AlignRight)
 
         # Botón "Volver" en la esquina derecha
         self.boton_volver = QPushButton("VOLVER")
@@ -74,100 +73,131 @@ class SeguimientoWindow(QMainWindow):
         self.boton_volver.clicked.connect(self.abrir_evaluacion_neuropsicologica)  # Conectar el botón para volver
         header_background_layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
 
-        # Botón "guardar" en la esquina derecha
-        self.boton_guardar = QPushButton("GUARDAR")
-        self.boton_guardar.setStyleSheet("""
-            QPushButton {
-                background-color: white;
-                border: 1px solid #005BBB;
-                border-radius: 5px;
-                color: #005BBB;
-                font-size: 12px;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-        """)
-        self.boton_guardar.clicked.connect(self.guardar_seguimiento)  # Conectar el botón para volver
-        header_background_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
-
         header_layout.addWidget(header_background)
         main_layout.addLayout(header_layout)
 
-        # Crear el formulario de seguimiento
-        form_layout = QGridLayout()
+        # Espaciador debajo del banner
+        main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
-        labels = ["ID seguimiento", "Fecha", "Motivo de consulta", "Objetivo de la sesión"]
-        right_labels = ["Intervención", "Observaciones", "Plan de tratamiento", "Próxima cita"]
+        # Layout principal dividido en dos secciones: Izquierda y Derecha
+        content_layout = QHBoxLayout()
 
-        # Agregar los campos del lado izquierdo con títulos en la parte superior
-        for i, label in enumerate(labels):
-            label_widget = QLabel(label)
-            label_widget.setFont(QFont('Arial', 14))
-            label_widget.setProperty('subtitulo', True)  # Aplicar el estilo de subtítulo
+        # ======== Sección Izquierda: Número de sesión y Fecha ========
+        left_layout = QVBoxLayout()
 
-            if label == "Fecha":
-                self.fecha_input = QLineEdit()
-                self.fecha_input.setPlaceholderText("dd/mm/aaaa")
-                input_widget = self.fecha_input
-            else:
-                input_widget = QTextEdit()
-                input_widget.setPlaceholderText(f"Ingrese {label.lower()}")
-
-            form_layout.addWidget(label_widget, i, 0)  # Título
-            form_layout.addWidget(input_widget, i, 1)  # Campo de entrada
-
-        # Agregar los campos del lado derecho con títulos en la parte superior
-        for i, label in enumerate(right_labels):
-            label_widget = QLabel(label)
-            label_widget.setFont(QFont('Arial', 14))
-            label_widget.setProperty('subtitulo', True)  # Aplicar el estilo de subtítulo
-
-            input_widget = QTextEdit()
-            input_widget.setPlaceholderText(f"Ingrese {label.lower()}")
-
-            form_layout.addWidget(label_widget, i, 2)  # Título
-            form_layout.addWidget(input_widget, i, 3)  # Campo de entrada
-
-        form_widget = QWidget()
-        form_widget.setStyleSheet("""
-            QWidget {
-                background-color: #f5f5f5;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 20px;
-            }
-            QLineEdit, QTextEdit {
+        # Botón "Número de la sesión"
+        self.sesion_button = QPushButton("Número de la sesión")
+        self.sesion_button.setFixedSize(200, 40)  # Ancho y altura fija para consistencia
+        self.sesion_button.setStyleSheet("""
+            QPushButton {
+                background-color: #8AA4F7;
+                color: white;
                 font-size: 14px;
-                border: 1px solid #999;
+                border-radius: 5px;
+            }
+        """)
+        left_layout.addWidget(self.sesion_button, alignment=Qt.AlignCenter)
+
+        # Campo de entrada para el número de la sesión
+        self.sesion_input = QLineEdit()
+        self.sesion_input.setPlaceholderText("Ingrese el número de la sesión")
+        self.sesion_input.setFixedSize(500, 35)
+        self.sesion_input.setStyleSheet("""
+            QLineEdit {
+                border: 1px solid black;
                 border-radius: 5px;
                 padding: 5px;
             }
         """)
-        form_widget.setLayout(form_layout)
-        main_layout.addWidget(form_widget)
+        left_layout.addWidget(self.sesion_input, alignment=Qt.AlignCenter)
 
-        # Crear los botones inferiores
+        # Espacio entre los elementos
+        left_layout.addSpacing(20)
+
+        # Botón "Fecha de la sesión"
+        self.fecha_button = QPushButton("Fecha de la sesión")
+        self.fecha_button.setFixedSize(200, 40)
+        self.fecha_button.setStyleSheet("""
+            QPushButton {
+                background-color: #8AA4F7;
+                color: white;
+                font-size: 14px;
+                border-radius: 5px;
+            }
+        """)
+        left_layout.addWidget(self.fecha_button, alignment=Qt.AlignCenter)
+
+        # Campo de entrada para la fecha
+        self.fecha_input = QLineEdit()
+        self.fecha_input.setPlaceholderText("dd/mm/aaaa")
+        self.fecha_input.setFixedSize(500, 35)
+        self.fecha_input.setStyleSheet("""
+            QLineEdit {
+                border: 1px solid black;
+                border-radius: 5px;
+                padding: 5px;
+            }
+        """)
+        left_layout.addWidget(self.fecha_input, alignment=Qt.AlignCenter)
+
+        # Añadir la sección izquierda al layout principal
+        content_layout.addLayout(left_layout)
+
+        # ======== Sección Derecha: Motivo de consulta ========
+        right_layout = QVBoxLayout()
+
+        # Botón "Motivo de consulta"
+        self.motivo_button = QPushButton("Motivo de consulta")
+        self.motivo_button.setFixedSize(500, 40)
+        self.motivo_button.setStyleSheet("""
+            QPushButton {
+                background-color: #8AA4F7;
+                color: white;
+                font-size: 14px;
+                border-radius: 5px;
+            }
+        """)
+        right_layout.addWidget(self.motivo_button, alignment=Qt.AlignCenter)
+
+        # Campo de texto para el motivo de consulta
+        self.motivo_input = QTextEdit()
+        self.motivo_input.setPlaceholderText("Ingrese el motivo de consulta")
+        self.motivo_input.setFixedSize(800, 100)
+        self.motivo_input.setStyleSheet("""
+            QTextEdit {
+                border: 1px solid black;
+                padding: 5px;
+                border-radius: 5px;
+            }
+        """)
+        right_layout.addWidget(self.motivo_input, alignment=Qt.AlignCenter)
+
+        # Añadir la sección derecha al layout principal
+        content_layout.addLayout(right_layout)
+
+        # ======== Añadir el layout de contenido al layout principal ========
+        main_layout.addLayout(content_layout)
+
+        # ======== Botón Inferior "Guardar seguimiento" ========
         buttons_layout = QHBoxLayout()
 
         self.boton_guardar = QPushButton("Guardar seguimiento")
+        self.boton_guardar.setFixedSize(250, 50)
         self.boton_guardar.setStyleSheet("""
             QPushButton {
-                background-color: #005BBB;  /* Color azul */
+                background-color: #005BBB;
                 color: white;
                 font-size: 16px;
-                padding: 15px 30px;  /* Aumenta el padding */
-                border-radius: 10px;  /* Aumenta el radio del borde */
-                width: 250px;  /* Asegúrate de que el ancho sea lo suficientemente grande */
+                border-radius: 10px;
+                padding: 10px;
             }
             QPushButton:hover {
-                background-color: #003F73;  /* Color más oscuro al pasar el cursor */
+                background-color: #003F73;
             }
         """)
         buttons_layout.addWidget(self.boton_guardar, alignment=Qt.AlignCenter)
 
-        # Conectar el botón "Guardar seguimiento" con la función para guardar el seguimiento
+        # Conectar el botón "Guardar seguimiento"
         self.boton_guardar.clicked.connect(self.guardar_seguimiento)
 
         main_layout.addLayout(buttons_layout)
@@ -198,8 +228,54 @@ class SeguimientoWindow(QMainWindow):
         self.close()
 
     def guardar_seguimiento(self):
-        # Implementar la lógica para guardar el seguimiento
-        pass
+        """Función para guardar el seguimiento en la base de datos."""
+        try:
+            codigo_hc = self.paciente_seleccionado['codigo_hc']
+            num_seccion = int(self.sesion_input.text())  # Asegúrate de que sea un número
+            fecha_str = self.fecha_input.text()  # Obtener la fecha como cadena
+            descripcion = self.motivo_input.toPlainText()
+
+            # Verificar si los campos están completos
+            if not num_seccion or not fecha_str or not descripcion:
+                QMessageBox.critical(self, "Error", "Por favor completa todos los campos.")
+                return
+
+            # Convertir la fecha de 'dd/mm/yyyy' a un objeto datetime.date
+            try:
+                fecha = datetime.strptime(fecha_str, "%d/%m/%Y").date()
+            except ValueError:
+                QMessageBox.critical(self, "Error", "Formato de fecha incorrecto. Usa 'dd/mm/aaaa'.")
+                return
+
+            # Convertir la fecha a una cadena en formato 'YYYY-MM-DD'
+            fecha_json = fecha.strftime("%Y-%m-%d")
+
+            data = {
+                "codigo_hc": codigo_hc,
+                "num_sesion": num_seccion,
+                "fecha": fecha_json,  # Enviar la fecha como cadena serializable
+                "descripcion": descripcion
+            }
+
+            print(f"Datos enviados: {data}")  # Log para depuración
+
+            # Enviar la solicitud al backend
+            if hasattr(self, 'diagnostico_existente') and self.diagnostico_existente:
+                response = requests.put(f'http://127.0.0.1:5000/seguimientos/{codigo_hc}', json=data)
+            else:
+                response = requests.post('http://127.0.0.1:5000/seguimientos', json=data)
+
+            print(f"Respuesta del servidor: {response.status_code} - {response.text}")
+
+            if response.status_code in [200, 201]:
+                QMessageBox.information(self, "Éxito", "Seguimiento guardado exitosamente")
+                self.diagnostico_existente = True  # Marcar que el seguimiento ahora existe
+            else:
+                QMessageBox.critical(self, "Error", f"Error al guardar: {response.status_code}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error de conexión: {str(e)}")
+            print(f"Error de conexión: {str(e)}")  # Log del error
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
