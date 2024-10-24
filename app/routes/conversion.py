@@ -11,8 +11,8 @@ def create_conversion():
         codigo_hc=data['codigo_hc'],
         id_prueba=data['id_prueba'],
         id_subprueba=data['id_subprueba'],
-        suma_puntacion=data['suma_puntacion'],
-        puntacion_compuesta=data['puntacion_compuesta'],
+        suma_puntacion=data['suma_puntuacion'],
+        puntacion_compuesta=data['puntuacion_compuesta'],
         memoria_trabajo=data['memoria_trabajo'],
         rango_percentil=data['rango_percentil'],
         intervalo_confianza=data['intervalo_confianza']

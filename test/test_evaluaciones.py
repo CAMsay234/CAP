@@ -1,14 +1,21 @@
 import unittest
-from app import app, db
+import json
+from app import create_app, db
 from app.models.evaluacion_neuropsicologica import EvaluacionNeuropsicologica
+
+app = create_app()
 
 class TestEvaluacionesNeuropsicologicas(unittest.TestCase):
 
     def setUp(self):
-        # Configurar el cliente de pruebas de Flask y la base de datos
-        self.app = app.test_client()
-        self.app.testing = True
+        # Crea y activa un contexto de aplicación
+        self.app_context = app.app_context()
+        self.app_context.push()
 
+        # Configurar el cliente de pruebas de Flask con el contexto de aplicación activo
+        self.client = app.test_client()
+        self.client.testing = True
+        
         # Crear tablas en la base de datos (si no existen)
         db.create_all()
 
@@ -20,6 +27,7 @@ class TestEvaluacionesNeuropsicologicas(unittest.TestCase):
             puntaje=90,
             media=100,
             desviacion_estandar=15,
+            escalar=2,  # Incluyendo el campo 'escalar'
             interpretacion="Normal"
         )
         db.session.add(evaluacion)
@@ -30,48 +38,78 @@ class TestEvaluacionesNeuropsicologicas(unittest.TestCase):
         db.session.remove()
         db.drop_all()
 
-    # Prueba para la creación de una evaluación (POST)
+        # Desactivar el contexto de la aplicación
+        self.app_context.pop()
+
     def test_crear_evaluacion(self):
-        response = self.app.post('/evaluaciones', json={
+        # Incluir el campo 'escalar' en la creación de la evaluación
+        response = self.client.post('/evaluaciones', json={
             'codigo_hc': 2,
             'id_prueba': 2,
             'id_subprueba': 2,
             'puntaje': 85,
             'media': 100,
             'desviacion_estandar': 15,
+            'escalar': 1,  # Campo obligatorio 'escalar'
             'interpretacion': 'Levemente bajo'
         })
         self.assertEqual(response.status_code, 201)
-        self.assertIn("Evaluación neuropsicológica creada exitosamente", response.get_data(as_text=True))
 
-    # Prueba para obtener todas las evaluaciones (GET)
+        try:
+            data = json.loads(response.get_data(as_text=True))
+            self.assertIn("Evaluación neuropsicológica creada exitosamente", data.get('message', ''))
+        except json.JSONDecodeError:
+            self.fail("La respuesta no contiene JSON válido.")
+
     def test_obtener_evaluaciones(self):
-        response = self.app.get('/evaluaciones')
+        response = self.client.get('/evaluaciones')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Normal", response.data)
 
-    # Prueba para obtener una evaluación por clave primaria (GET)
+        try:
+            data = json.loads(response.get_data(as_text=True))
+            self.assertTrue(any(
+                "Normal" in evaluacion.get('interpretacion', '')
+                for evaluacion in data if isinstance(evaluacion, dict)
+            ))
+        except json.JSONDecodeError:
+            self.fail("La respuesta no contiene JSON válido.")
+
     def test_obtener_evaluacion(self):
-        response = self.app.get('/evaluaciones/1/1/1')
+        response = self.client.get('/evaluaciones/1/1/1')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Normal", response.data)
 
-    # Prueba para actualizar una evaluación (PUT)
+        try:
+            data = json.loads(response.get_data(as_text=True))
+            self.assertIn("Normal", data.get('interpretacion', ''))
+        except json.JSONDecodeError:
+            self.fail("La respuesta no contiene JSON válido.")
+
     def test_actualizar_evaluacion(self):
-        response = self.app.put('/evaluaciones/1/1/1', json={
+        # Asegúrate de incluir 'escalar' en la actualización
+        response = self.client.put('/evaluaciones/1/1/1', json={
             'puntaje': 95,
             'media': 100,
             'desviacion_estandar': 15,
+            'escalar': 3,  # Campo obligatorio 'escalar'
             'interpretacion': 'Levemente alto'
         })
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Evaluación neuropsicológica actualizada exitosamente", response.get_data(as_text=True))
 
-    # Prueba para eliminar una evaluación (DELETE)
+        try:
+            data = json.loads(response.get_data(as_text=True))
+            self.assertIn("Evaluación neuropsicológica actualizada exitosamente", data.get('message', ''))
+        except json.JSONDecodeError:
+            self.fail("La respuesta no contiene JSON válido.")
+
     def test_eliminar_evaluacion(self):
-        response = self.app.delete('/evaluaciones/1/1/1')
+        response = self.client.delete('/evaluaciones/1/1/1')
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Evaluación neuropsicológica eliminada exitosamente", response.get_data(as_text=True))
+
+        try:
+            data = json.loads(response.get_data(as_text=True))
+            self.assertIn("Evaluación neuropsicológica eliminada exitosamente", data.get('message', ''))
+        except json.JSONDecodeError:
+            self.fail("La respuesta no contiene JSON válido.")
 
 if __name__ == '__main__':
     unittest.main()
