@@ -22,6 +22,7 @@ def crear_seguimiento():
         fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         num_seccion = get_next_num_seccion(codigo_hc)
 
+        # Crear el objeto Seguimiento con la fecha como objeto date
         nuevo_seguimiento = Seguimiento(
             codigo_hc=codigo_hc,
             num_seccion=num_seccion,
@@ -29,12 +30,15 @@ def crear_seguimiento():
             descripcion=descripcion
         )
 
+        # Guardar en la base de datos
         db.session.add(nuevo_seguimiento)
         db.session.commit()
+
         return jsonify({"message": "Seguimiento creado exitosamente", "num_seccion": num_seccion}), 201
 
     except Exception as e:
         db.session.rollback()
+        print(f"Error al crear el seguimiento: {e}")  # Log del error
         return jsonify({"error": str(e)}), 500
 
 # Obtener todos los seguimientos (GET)
@@ -44,7 +48,7 @@ def obtener_seguimientos():
     seguimientos_list = [{
         "codigo_hc": s.codigo_hc,
         "num_seccion": s.num_seccion,
-        "fecha": s.fecha.strftime('%Y-%m-%d'),  # Convertir fecha a string para el JSON
+        "fecha": s.fecha.strftime('%Y-%m-%d'),  # Convertir fecha a string para JSON
         "descripcion": s.descripcion
     } for s in seguimientos]
     return jsonify(seguimientos_list), 200
@@ -72,14 +76,15 @@ def actualizar_seguimiento(codigo_hc, num_seccion):
 
     data = request.get_json()
 
-    # Validar y convertir la fecha solo si está presente en el request
+    # Validar y convertir la fecha solo si está presente
     fecha_str = data.get('fecha')
     if fecha_str:
         try:
             seguimiento.fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         except ValueError:
-            return jsonify({"error": "Formato de fecha inválido"}), 400
+            return jsonify({"error": "Formato de fecha inválido. Usa 'YYYY-MM-DD'."}), 400
 
+    # Actualizar la descripción si está presente
     seguimiento.descripcion = data.get('descripcion', seguimiento.descripcion)
 
     try:
