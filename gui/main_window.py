@@ -9,46 +9,51 @@ from tipo_historia import TipoHistoriaWindow  # Importar la nueva ventana de tip
 class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        
+        
         # Configurar la ventana para que se abra en modo pantalla completa
         self.setWindowTitle("Sistema Automatizado para la Gestión de Datos Clínicos y Neuropsicológicos")
-        self.showFullScreen()  # Abrir la ventana en pantalla completa
+          # Abrir la ventana en pantalla completa
+        self.WindowState = Qt.WindowMaximized  
 
-        # Crear el layout principal
         main_layout = QVBoxLayout()
 
-        # Crear un layout horizontal para la imagen
-        image_layout = QHBoxLayout()
-        
+        # Crear un layout horizontal para la imagen y el botón de volver
+        top_layout = QHBoxLayout()
+
         # Cargar la imagen correctamente escalada
-        image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')  # Asegúrate de que la imagen esté en la carpeta correcta
+        image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
         self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Escalar imagen manteniendo proporción
+        pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.logo.setPixmap(pixmap)
-        image_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
+        top_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
-        # Añadir el layout de la imagen al layout principal
-        main_layout.addLayout(image_layout)
+        # Añadir un espaciador entre el logo y el botón
+        top_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
-        # Crear un espaciador adicional debajo de la imagen para ajustar el título
-        main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed))
+        # Añadir el layout del header al layout principal
+        main_layout.addLayout(top_layout)
 
-        # Crear un layout horizontal para el título
-        title_layout = QHBoxLayout()
+        # Crear un espaciador grande debajo de la imagen
+        main_layout.addSpacerItem(QSpacerItem(20, 100, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
-        # Crear una etiqueta para el título
+
+         # Crear el título centrado
         titulo = QLabel("SISTEMA AUTOMATIZADO PARA LA GESTIÓN DE DATOS CLÍNICOS Y NEUROPSICOLÓGICOS")
-        titulo.setFont(QFont('Arial', 60))
+        font = QFont('Arial', 24)
+        font.setBold(True)  # Poner el texto en negrilla
+        titulo.setFont(font)
+        titulo.setStyleSheet("color: white;")
         titulo.setAlignment(Qt.AlignCenter)
-        title_layout.addWidget(titulo, alignment=Qt.AlignCenter)
+        main_layout.addWidget(titulo)
 
-        # Añadir el layout del título al layout principal
-        main_layout.addLayout(title_layout)
+        # Crear un espaciador debajo del título
+        main_layout.addSpacerItem(QSpacerItem(20, 60, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
         # Crear un layout para los campos de usuario y contraseña
         form_layout = QVBoxLayout()
-        form_layout.setSpacing(10)  # Espacio reducido entre los campos
-
+        form_layout.setSpacing(20)  # Espacio reducido entre los campos
+        
         # Crear los campos de usuario y contraseña
         self.input_usuario = QLineEdit()
         self.input_usuario.setPlaceholderText("USUARIO")
@@ -83,16 +88,17 @@ class LoginWindow(QMainWindow):
         # Añadir el formulario al layout principal
         main_layout.addLayout(form_layout)
 
-        # Crear un widget central para contener los elementos
-        widget = QWidget()
-        widget.setLayout(main_layout)
-        self.setCentralWidget(widget)
+        main_layout.addSpacerItem(QSpacerItem(20, 60, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
         # Conectar el botón de registro con la acción para abrir la ventana de registro
         self.boton_registro.clicked.connect(self.abrir_registro)
 
         # Conectar el botón de login para abrir la nueva ventana de tipo historia
         self.boton_login.clicked.connect(self.abrir_tipo_historia)
+
+        widget = QWidget()
+        widget.setLayout(main_layout)
+        self.setCentralWidget(widget)
 
     def abrir_tipo_historia(self):
         # Cerrar la ventana actual y abrir la nueva ventana
@@ -118,9 +124,10 @@ if __name__ == '__main__':
     # Cargar el stylesheet general
     load_stylesheet(app)
 
-    # Crear una instancia de la ventana de login y mostrarla
+    # Crear una instancia de la ventana de login
     ventana = LoginWindow()
-    ventana.show()
+    ventana.showMaximized()  # Asegura que la ventana se abra maximizada
 
+    # Ejecutar la aplicación
     sys.exit(app.exec_())
 

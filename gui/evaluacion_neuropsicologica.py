@@ -305,24 +305,3 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             self.ventana_diagnostico = VisualizacionWindow(self.paciente_seleccionado)
             self.ventana_diagnostico.show()
             self.close()
-
-# Ejecutar la aplicación
-if __name__ == '__main__':
-    import sys
-    from PyQt5.QtWidgets import QApplication
-    app = QApplication(sys.argv)
-
-    # Crear un ejemplo de paciente seleccionado para pruebas
-    paciente_seleccionado = {
-        'nombre': 'Juan Pérez',
-        'codigo_hc': '12345'
-    }
-
-    ventana = EvaluacionNeuropsicologicaWindow(paciente_seleccionado)
-    ventana.show()
-
-    # Forzar la actualización del layout
-    ventana.updateGeometry()
-    ventana.repaint()
-
-    sys.exit(app.exec_())
