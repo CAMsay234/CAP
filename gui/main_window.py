@@ -68,9 +68,9 @@ class LoginWindow(QMainWindow):
         buttons_layout = QHBoxLayout()
 
         # Crear el botón de "¿Olvidaste tu contraseña?"
-        self.boton_olvido_contrasena = QPushButton("¿Olvidaste la contraseña?")
-        self.boton_olvido_contrasena.setProperty('flat', True)
-        buttons_layout.addWidget(self.boton_olvido_contrasena, alignment=Qt.AlignCenter)
+        #self.boton_olvido_contrasena = QPushButton("¿Olvidaste la contraseña?")
+        #self.boton_olvido_contrasena.setProperty('flat', True)
+        #buttons_layout.addWidget(self.boton_olvido_contrasena, alignment=Qt.AlignCenter)
 
         # Crear el botón de "Registrarse"
         self.boton_registro = QPushButton("Registrarse")
