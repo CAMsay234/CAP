@@ -7,9 +7,8 @@ class Conversion(db.Model):
     codigo_hc = db.Column(db.Integer, db.ForeignKey('pacientes.codigo_hc'), primary_key=True, nullable=False)
     id_prueba = db.Column(db.Integer, db.ForeignKey('pruebas.id'), primary_key=True, nullable=False)
     id_subprueba = db.Column(db.Integer, db.ForeignKey('sub_pruebas.id'), primary_key=True, nullable=False)
-    suma_puntacion = db.Column(db.Float, nullable=False)
-    puntacion_compuesta = db.Column(db.Float, nullable=False)
-    memoria_trabajo = db.Column(db.Float, nullable=False)
+    suma_puntuacion = db.Column(db.Float, nullable=False)
+    puntuacion_compuesta = db.Column(db.Float, nullable=False)
     rango_percentil = db.Column(db.Float, nullable=False)
     intervalo_confianza = db.Column(db.Float, nullable=False)
 

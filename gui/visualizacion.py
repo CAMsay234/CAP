@@ -27,8 +27,9 @@ class VisualizacionWindow(QMainWindow):
         # Mostrar logo y título
         self.add_header(main_layout)
 
-        # Añadir gráfico
+        # Añadir gráficos
         self.add_graph(main_layout)
+        self.add_graph_compuesto(main_layout)
 
     def add_header(self, layout):
         # Añadir logo y título
@@ -103,6 +104,17 @@ class VisualizacionWindow(QMainWindow):
         # Añadir una cuadrícula
         ax.grid(True, linestyle='--', alpha=0.7)
 
+    def add_graph_compuesto(self, layout):
+        # Obtener datos de la tabla conversiones
+        conversiones = self.obtener_conversiones()
+
+        # Clasificar las conversiones por categoría compuesta
+        conversiones_clasificadas = self.clasificar_por_categoria_compuesta(conversiones)
+
+        # Crear el gráfico compuesto y añadirlo al layout
+        canvas_compuesto = self.crear_grafico_compuesto(conversiones_clasificadas)
+        layout.addWidget(canvas_compuesto)
+
     def obtener_puntuaciones(self):
         # Obtener el ID de la prueba de capacidad intelectual
         id_prueba = self.obtener_id_prueba("Capacidad Intelectual")
@@ -123,6 +135,48 @@ class VisualizacionWindow(QMainWindow):
             print("Escalares obtenidos:", escalares)
             return self.clasificar_por_categoria(subpruebas_nombres, escalares)
         return {}
+
+    def obtener_conversiones(self):
+        # Obtener conversiones desde el backend
+        url = f'http://localhost:5000/conversiones/{self.paciente_seleccionado["codigo_hc"]}'
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            try:
+                data = response.json()  # Ahora `data` es una lista de conversiones
+                # Depuración: Imprimir los datos obtenidos
+                print("Datos obtenidos de la API:")
+                for item in data:
+                    print(item)
+
+                # Extraer las subpruebas y sus respectivas puntuaciones compuestas
+                conversiones = {
+                    item['id_subprueba']: item['puntuacion_compuesta']
+                    for item in data if 'puntuacion_compuesta' in item
+                }
+
+                # Imprimir los IDs y las puntuaciones compuestas obtenidas
+                print("Conversiones obtenidas:", conversiones)
+
+                # Obtener los nombres de las subpruebas
+                subpruebas_nombres = self.obtener_nombres_subpruebas(list(conversiones.keys()))
+                conversiones_nombres = {
+                    subpruebas_nombres[i]: conversiones[subprueba_id]
+                    for i, subprueba_id in enumerate(conversiones.keys())
+                }
+
+                # Imprimir los nombres de las subpruebas y sus puntuaciones compuestas
+                print("Nombres de subpruebas y puntuaciones compuestas:", conversiones_nombres)
+
+                return conversiones_nombres
+            except ValueError:
+                print("Error al parsear la respuesta JSON")
+                return {}
+        else:
+            print(f"Error en la solicitud: {response.status_code}")
+            return {}
+
+
 
     def obtener_id_prueba(self, nombre_prueba):
         # Obtener el ID de la prueba desde el backend
@@ -181,6 +235,68 @@ class VisualizacionWindow(QMainWindow):
             print(f"  Escalares: {escalares}")
 
         return clasificacion
+
+    def clasificar_por_categoria_compuesta(self, conversiones):
+        # Inicializar las categorías con sus siglas
+        categorias = {
+            "ICV": 0.0,  # Comprensión Verbal
+            "IRP": 0.0,  # Razonamiento Perceptual
+            "IMT": 0.0,  # Memoria de Trabajo
+            "IVP": 0.0,  # Velocidad de Procesamiento
+            "CIT": 0.0   # Capacidad Intelectual Total
+        }
+
+        # Mapear las subpruebas a las categorías correctas
+        mapeo_subpruebas = {
+            "COMPRENSIÓN VERBAL": "ICV",
+            "RAZONAMIENTO PERCEPTUAL": "IRP",
+            "MEMORIA DE TRABAJO": "IMT",
+            "VELOCIDAD DE PROCESAMIENTO": "IVP",
+            "TOTAL": "CIT"
+        }
+
+        # Asignar las puntuaciones compuestas a las categorías correspondientes
+        for subprueba, puntuacion in conversiones.items():
+            categoria = mapeo_subpruebas.get(subprueba)  # Buscar la categoría correspondiente
+            if categoria:
+                categorias[categoria] = float(puntuacion)
+
+        # Depuración: Imprimir categorías y sus puntaciones
+        for categoria, puntacion in categorias.items():
+            print(f"Categoría: {categoria}")
+            print(f"  Puntación: {puntacion}")
+
+        return categorias
+
+
+    def crear_grafico_compuesto(self, conversiones):
+        # Extraer las categorías y puntuaciones compuestas
+        categories = ["ICV", "IRP", "IMT", "IVP", "CIT"]
+        scores = [conversiones.get(cat, 0.0) for cat in categories]  # Obtener el valor de cada categoría o 0.0 si está vacío
+
+        # Crear la figura
+        fig, ax = plt.subplots(figsize=(8, 6))
+        canvas = FigureCanvas(fig)
+
+        # Y-axis range (matching the example with values from 40 to 160)
+        ax.set_yticks(range(40, 161, 5))
+        ax.set_ylim(40, 160)
+
+        # Plotting the scores for each category
+        ax.plot(categories, scores, marker='o', color='gray', linewidth=2)
+
+        # Drawing a horizontal line at 100 as reference
+        ax.axhline(y=100, color='navy', linewidth=3)
+
+        # Customizing the plot
+        ax.set_title("Perfil de Puntuaciones Compuestas", fontsize=14)
+        ax.set_xlabel("Escala", fontsize=12)
+        ax.set_ylabel("Puntuación", fontsize=12)
+
+        # Adding a grid with light lines for better readability
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+
+        return canvas
 
     def normalizar_texto(self, texto):
         # Normalizar texto para eliminar acentos y convertir a mayúsculas

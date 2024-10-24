@@ -97,7 +97,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                                    "SUCESIÓN DE NÚMEROS Y LETRAS", "PESO FIGURADO", "COMPRENSIÓN", "CANCELACIÓN", "FIGURAS INCOMPLETAS"], main_layout)
  
         # Tabla de conversión de puntuaciones
-        self.add_conversion("CONVERSIÓN DE LA SUMA DE PUNTUACIONES ESCALARES A PUNTUACIONES COMPUESTAS", ["COMPRENSIÓN VERBAL", "RAZONAMIENTO PERCEPTUAL", "MEMORIA DE TRABAJO", "VELOCIDAD DE PROCESAMIENTO"], main_layout)
+        self.add_conversion("CONVERSIÓN DE LA SUMA DE PUNTUACIONES ESCALARES A PUNTUACIONES COMPUESTAS", ["COMPRENSIÓN VERBAL", "RAZONAMIENTO PERCEPTUAL", "MEMORIA DE TRABAJO", "VELOCIDAD DE PROCESAMIENTO", "TOTAL"], main_layout)
        
         # Configurar el scroll y añadir el widget principal
         scroll.setWidget(scroll_widget)
@@ -337,15 +337,14 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
             try:
                 suma_puntuacion = float(fields[0].text().strip() or 0.0)
                 puntuacion_compuesta = float(fields[1].text().strip() or 0.0)
-                memoria_trabajo = float(fields[2].text().strip() or 0.0)
-                rango_percentil = float(fields[3].text().strip() or 0.0)
-                intervalo_confianza = float(fields[4].text().strip() or 0.0)
+                rango_percentil = float(fields[2].text().strip() or 0.0)
+                intervalo_confianza = float(fields[3].text().strip() or 0.0)
             except ValueError as e:
                 print(f"Error al convertir los valores en la fila {row}: {e}")
                 continue
             
             print(f"Subprueba: {subprueba_nombre}, Suma: {suma_puntuacion}, "
-                f"Compuesta: {puntuacion_compuesta}, Memoria: {memoria_trabajo}, Percentil: {rango_percentil}, IC: {intervalo_confianza}")
+                f"Compuesta: {puntuacion_compuesta}, Percentil: {rango_percentil}, IC: {intervalo_confianza}")
 
             # Verificar si ya existe una evaluación para esta combinación de valores
             check_url = f"http://localhost:5000/conversiones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}"
@@ -358,7 +357,6 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                 "id_subprueba": subprueba_id,  
                 "suma_puntuacion": suma_puntuacion,
                 "puntuacion_compuesta": puntuacion_compuesta,
-                "memoria_trabajo": memoria_trabajo,
                 "rango_percentil": rango_percentil,
                 "intervalo_confianza": intervalo_confianza
             }
@@ -553,8 +551,8 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         layout.addWidget(title_label)
 
         self.conversion_layout = QGridLayout()  # Crear el layout de conversiones
-        headers = ["ESCALA", "SUMA PUNTUACIONES ESCALARES", "PUNTUACIÓN COMPUESTA", "MEMORIA DE TRABAJO",
-                "RANGO PERCENTIL", "INTERVALO CONFIANZA"]
+        headers = ["ESCALA", "SUMA PUNTUACIONES ESCALARES", "PUNTUACIÓN COMPUESTA",
+                "RANGO PERCENTIL", "INTERVALO CONFIANZA, TOTAL"]
 
         # Agregar encabezados
         for col, header in enumerate(headers):
@@ -576,7 +574,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
 
             # Crear y añadir campos de entrada
             row_fields = []  # Almacenar los campos de esta fila
-            for col in range(1, 6):
+            for col in range(1, 5):
                 input_field = QLineEdit()
                 input_field.setFixedSize(100, 35)
                 input_field.setAlignment(Qt.AlignCenter)
