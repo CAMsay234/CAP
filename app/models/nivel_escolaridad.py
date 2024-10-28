@@ -7,3 +7,12 @@ class NivelEscolaridad(db.Model):
 
     def __repr__(self):
         return f'<NivelEscolaridad {self.descripcion}>'
+    
+    @classmethod
+    def insertar_valores_por_defecto(cls):
+        niveles = ["Primaria", "Secundaria", "Técnico/Tecnológico", "Universitaria", "Posgrado", "No aplica"]
+        for nivel in niveles:
+            if not cls.query.filter_by(descripcion=nivel).first():
+                nuevo_nivel = cls(descripcion=nivel)
+                db.session.add(nuevo_nivel)
+        db.session.commit()

@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
@@ -17,7 +17,7 @@ class VisualizacionWindow(QMainWindow):
 
         # Configuración de la ventana principal
         self.setWindowTitle("Visualización Capacidad Intelectual")
-        self.setGeometry(0, 0, 1800, 697)  # Tamaño manejable y seguro
+        self.setGeometry(0, 0, 1280, 800)  # Tamaño manejable y seguro
 
         # Crear widget principal y layout
         main_widget = QWidget(self)
@@ -41,6 +41,24 @@ class VisualizacionWindow(QMainWindow):
         title_label = QLabel("Capacidad Intelectual", self)
         title_label.setFont(QFont('Arial', 24))
         layout.addWidget(title_label, alignment=Qt.AlignCenter)
+                # Botón "Volver" en la esquina derecha
+        self.boton_volver = QPushButton("VOLVER")
+        self.boton_volver.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                border: 1px solid #005BBB;
+                border-radius: 5px;
+                color: #005BBB;
+                font-size: 12px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+        self.boton_volver.clicked.connect(self.abrir_ventana_anterior)
+        layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
+        
 
     def add_graph(self, layout):
         # Cambiar el tamaño de la figura
@@ -315,7 +333,12 @@ class VisualizacionWindow(QMainWindow):
                 return int(valor)
         except ValueError:
             return 0  # Valor por defecto en caso de error de conversión
-
+        
+    def abrir_ventana_anterior(self):
+        if hasattr(self, 'paciente_seleccionado'):
+            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+            self.ventana_anterior = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
+            self.close()
 if __name__ == "__main__":
     app = QApplication([])
     paciente = {'codigo_hc': 1, 'nombre': 'Camilo Velasquez'}

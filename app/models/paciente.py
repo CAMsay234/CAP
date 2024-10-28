@@ -1,6 +1,6 @@
 from app import db
 from sqlalchemy import CheckConstraint
-
+from sqlalchemy.orm import validates
 
 class Paciente(db.Model):
     __tablename__ = 'pacientes'
@@ -19,12 +19,17 @@ class Paciente(db.Model):
     # Restricciones adicionales:
     __table_args__ = (
         CheckConstraint('edad >= 0', name='check_edad_positiva'),  # Asegura que la edad sea positiva
-        # CheckConstraint para números solo se puede manejar en la capa de aplicación, no en SQLite
     )
 
     def __repr__(self):
         return f'<Paciente {self.nombre}>'
-    
+
+    @validates('documento', 'telefono', 'celular')
+    def validate_numerico(self, key, value):
+        if not es_numerico(value):
+            raise ValueError(f"El campo {key} debe contener solo números.")
+        return value
+
 def es_numerico(valor):
     return valor.isdigit()  # Retorna True si el valor contiene solo dígitos
 
