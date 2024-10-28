@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QHBoxLayout, QWidget, 
                              QSpacerItem, QSizePolicy, QMessageBox)
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from registro import RegisterWindow
 from tipo_historia import TipoHistoriaWindow
 
@@ -16,6 +16,9 @@ class LoginWindow(QMainWindow):
         # Configurar la ventana
         self.setWindowTitle("Sistema Automatizado para la Gestión de Datos Clínicos y Neuropsicológicos")
         self.showMaximized()  # Abrir la ventana maximizada
+
+        # Contador de intentos de login
+        self.intentos_login = 0
 
         # Layout principal
         main_layout = QVBoxLayout()
@@ -105,9 +108,20 @@ class LoginWindow(QMainWindow):
                 self.mostrar_mensaje("Bienvenido", f"Bienvenido {username}")
                 self.abrir_tipo_historia()
             else:
-                self.mostrar_mensaje("Error", "Credenciales incorrectas. Por favor, verifica tus datos.")
+                self.intentos_login += 1
+                if self.intentos_login >= 3:
+                    self.mostrar_mensaje("Error", "Has alcanzado el número máximo de intentos. Intenta más tarde.")
+                    self.boton_login.setEnabled(False)
+                    QTimer.singleShot(30000, self.habilitar_boton_login)  # Esperar 30 segundos para reactivar el botón
+                else:
+                    self.mostrar_mensaje("Error", "Nombre de usuario o contraseña incorrecta.")
         except requests.exceptions.ConnectionError:
             self.mostrar_mensaje("Error", "No se pudo conectar con el servidor. Revisa tu conexión.")
+
+    def habilitar_boton_login(self):
+        """Habilita el botón de login después de un tiempo de espera."""
+        self.intentos_login = 0
+        self.boton_login.setEnabled(True)
 
     def mostrar_mensaje(self, titulo, mensaje):
         """Muestra un cuadro de diálogo con un mensaje."""
@@ -115,6 +129,25 @@ class LoginWindow(QMainWindow):
         msg_box.setWindowTitle(titulo)
         msg_box.setText(mensaje)
         msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #f0f0f0;
+                font-size: 14px;
+                color: #005BBB;  /* Cambia el color a azul */
+            }
+            QLabel {
+                color: #005BBB;  /* Asegura que el texto del mensaje sea azul */
+            }
+            QPushButton {
+                background-color: #005BBB;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #003F73;
+            }
+        """)
         msg_box.exec_()
 
     def abrir_tipo_historia(self):
@@ -134,10 +167,7 @@ def load_stylesheet(app):
     with open(stylesheet_path, "r") as file:
         app.setStyleSheet(file.read())
 
-
 # Ejecutar la aplicación
-
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     load_stylesheet(app)
@@ -146,5 +176,3 @@ if __name__ == '__main__':
     ventana.showFullScreen()  # Cambiar a showFullScreen()
 
     sys.exit(app.exec_())
-
-
