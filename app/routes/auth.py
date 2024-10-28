@@ -42,3 +42,12 @@ def login():
         return jsonify({"error": "Credenciales incorrectas"}), 401
 
     return jsonify({"message": f"Bienvenido {usuario.username}"}), 200
+
+@auth_bp.route('/user/<username>', methods=['GET'])
+def get_user(username):
+    usuario = Usuario.query.filter_by(username=username).first()
+
+    if not usuario:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    return jsonify({"username": usuario.username, "email": usuario.email}), 200

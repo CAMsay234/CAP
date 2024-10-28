@@ -45,49 +45,56 @@ def buscar_paciente():
     else:
         return jsonify({'error': 'Falta el parámetro documento'}), 400
 
-
-
 # Ruta para crear un nuevo paciente
 @pacientes_bp.route('/paciente/nuevo', methods=['POST'])
 def crear_paciente():
-    data = request.json  # Supone que los datos vienen en formato JSON
-    
-    # Convertir la fecha de nacimiento a un objeto date de Python
-    fecha_nacimiento = datetime.strptime(data['fecha_nacimiento'], '%Y-%m-%d').date()
+    try:
+        data = request.json  # Supone que los datos vienen en formato JSON
+        
+        # Convertir la fecha de nacimiento a un objeto date de Python
+        fecha_nacimiento = datetime.strptime(data['fecha_nacimiento'], '%Y-%m-%d').date()
 
-    nuevo_paciente = Paciente(
-        documento=data['documento'],
-        nombre=data['nombre'],
-        edad=data['edad'],
-        fecha_nacimiento=fecha_nacimiento,  # Pasar la fecha como objeto date
-        id_escolaridad=data['id_escolaridad'],
-        profesion=data['profesion'],
-        telefono=data['telefono'],
-        celular=data['celular'],
-        remision=data['remision']
-    )
+        nuevo_paciente = Paciente(
+            documento=data['documento'],
+            nombre=data['nombre'],
+            edad=data['edad'],
+            fecha_nacimiento=fecha_nacimiento,  # Pasar la fecha como objeto date
+            id_escolaridad=data['id_escolaridad'],
+            profesion=data['profesion'],
+            telefono=data['telefono'],
+            celular=data['celular'],
+            remision=data['remision']
+        )
 
-    db.session.add(nuevo_paciente)
-    db.session.commit()
+        db.session.add(nuevo_paciente)
+        db.session.commit()
 
-    # Devolver los datos del paciente creado
-    return jsonify({
-        "codigo_hc": nuevo_paciente.codigo_hc,
-        "documento": nuevo_paciente.documento,
-        "nombre": nuevo_paciente.nombre,
-        "edad": nuevo_paciente.edad,
-        "fecha_nacimiento": nuevo_paciente.fecha_nacimiento.strftime('%Y-%m-%d'),
-        "id_escolaridad": nuevo_paciente.id_escolaridad,
-        "profesion": nuevo_paciente.profesion,
-        "telefono": nuevo_paciente.telefono,
-        "celular": nuevo_paciente.celular,
-        "remision": nuevo_paciente.remision
-    }), 201
+        # Devolver los datos del paciente creado
+        return jsonify({
+            "codigo_hc": nuevo_paciente.codigo_hc,
+            "documento": nuevo_paciente.documento,
+            "nombre": nuevo_paciente.nombre,
+            "edad": nuevo_paciente.edad,
+            "fecha_nacimiento": nuevo_paciente.fecha_nacimiento.strftime('%Y-%m-%d'),
+            "id_escolaridad": nuevo_paciente.id_escolaridad,
+            "profesion": nuevo_paciente.profesion,
+            "telefono": nuevo_paciente.telefono,
+            "celular": nuevo_paciente.celular,
+            "remision": nuevo_paciente.remision
+        }), 201
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Ruta para obtener los detalles de un paciente específico
 @pacientes_bp.route('/paciente', methods=['GET'])
-def obtener_paciente(documento):
-    paciente = Paciente.query.get_or_404(documento)
+def obtener_paciente():
+    documento = request.args.get('documento', None)
+    if not documento:
+        return jsonify({'error': 'Falta el parámetro documento'}), 400
+
+    paciente = Paciente.query.filter_by(documento=documento).first_or_404()
     paciente_data = {
         'codigo_hc': paciente.codigo_hc,
         'documento': paciente.documento,
@@ -104,22 +111,27 @@ def obtener_paciente(documento):
 # Ruta para actualizar un paciente
 @pacientes_bp.route('/paciente/<int:codigo_hc>', methods=['PUT'])
 def actualizar_paciente(codigo_hc):
-    paciente = Paciente.query.get_or_404(codigo_hc)
-    data = request.json  # Supone que los datos vienen en formato JSON
+    try:
+        paciente = Paciente.query.get_or_404(codigo_hc)
+        data = request.json  # Supone que los datos vienen en formato JSON
 
-    paciente.documento = data.get('documento', paciente.documento)
-    paciente.nombre = data.get('nombre', paciente.nombre)
-    paciente.edad = data.get('edad', paciente.edad)
-    paciente.fecha_nacimiento = data.get('fecha_nacimiento', paciente.fecha_nacimiento)
-    paciente.id_escolaridad = data.get('id_escolaridad', paciente.id_escolaridad)  # Actualizar id escolaridad
-    paciente.profesion = data.get('profesion', paciente.profesion)
-    paciente.telefono = data.get('telefono', paciente.telefono)
-    paciente.celular = data.get('celular', paciente.celular)
-    paciente.remision = data.get('remision', paciente.remision)
+        paciente.documento = data.get('documento', paciente.documento)
+        paciente.nombre = data.get('nombre', paciente.nombre)
+        paciente.edad = data.get('edad', paciente.edad)
+        paciente.fecha_nacimiento = datetime.strptime(data.get('fecha_nacimiento', paciente.fecha_nacimiento.strftime('%Y-%m-%d')), '%Y-%m-%d').date()
+        paciente.id_escolaridad = data.get('id_escolaridad', paciente.id_escolaridad)  # Actualizar id escolaridad
+        paciente.profesion = data.get('profesion', paciente.profesion)
+        paciente.telefono = data.get('telefono', paciente.telefono)
+        paciente.celular = data.get('celular', paciente.celular)
+        paciente.remision = data.get('remision', paciente.remision)
 
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({"mensaje": "Paciente actualizado exitosamente."})
+        return jsonify({"mensaje": "Paciente actualizado exitosamente."})
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Ruta para eliminar un paciente
 @pacientes_bp.route('/paciente/<int:codigo_hc>', methods=['DELETE'])

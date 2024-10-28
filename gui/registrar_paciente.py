@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, 
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, QDate
 import requests  # Para realizar las solicitudes al backend
+from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtCore import QRegExp
 from datetime import datetime
 from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la clase de la ventana de evaluación neuropsicológica
 
@@ -76,7 +78,6 @@ class RegistrarPacienteWindow(QMainWindow):
 
         labels = ["Nombre completo", "Fecha de nacimiento", "Escolaridad", "Profesión/Ocupación", "Celular"]
         right_labels = ["Edad", "Documento de identidad", "Fecha actual", "Teléfono", "Remisión"]
-
         # Agregar los campos del lado izquierdo con títulos en la parte superior
         for i, label in enumerate(labels):
             label_widget = QLabel(label)
@@ -212,6 +213,27 @@ class RegistrarPacienteWindow(QMainWindow):
         except Exception as e:
             print(f"Error de conexión: {str(e)}")
 
+    def create_input_fields(self):
+        # Crear expresiones regulares para validar solo números
+        numero_regex = QRegExp(r'^\d+$')
+
+        # Crear validadores
+        numero_validator = QRegExpValidator(numero_regex, self)
+
+        # Crear campos de entrada y asignar validadores
+        self.nombre_input = QLineEdit()
+        self.profesion_input = QLineEdit()
+        self.celular_input = QLineEdit()
+        self.celular_input.setValidator(numero_validator)
+        self.edad_input = QLineEdit()
+        self.edad_input.setValidator(numero_validator)
+        self.documento_input = QLineEdit()
+        self.documento_input.setValidator(numero_validator)
+        self.telefono_input = QLineEdit()
+        self.telefono_input.setValidator(numero_validator)
+        self.remision_input = QLineEdit()
+
+
     def guardar_y_abrir_hc(self):
         """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
         from historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
@@ -235,37 +257,99 @@ class RegistrarPacienteWindow(QMainWindow):
             return "Error"
 
     def guardar_paciente(self):
-        try:
-            # Validar que todos los campos requeridos estén llenos
-            if not self.documento_input.text() or not self.nombre_input.text() or not self.edad_input.text():
-                raise ValueError("Todos los campos obligatorios deben estar completos.")
+            try:
+                # Validar que todos los campos requeridos estén llenos
+                if not self.documento_input.text() or not self.nombre_input.text() or not self.edad_input.text():
+                    raise ValueError("Todos los campos obligatorios deben estar completos.")
 
-            # Intentar convertir el campo de edad a un entero
-            edad = int(self.edad_input.text())
+                # Intentar convertir el campo de edad a un entero
+                edad = int(self.edad_input.text())
 
-            # Obtener los datos del paciente desde los campos de entrada
-            data = {
-                "documento": self.documento_input.text(),
-                "nombre": self.nombre_input.text(),
-                "edad": edad,
-                "fecha_nacimiento": self.fecha_nacimiento_input.date().toString("yyyy-MM-dd"),
-                "id_escolaridad": self.escolaridad_combo.currentData(),
-                "profesion": self.profesion_input.text(),
-                "telefono": self.telefono_input.text(),
-                "celular": self.celular_input.text(),
-                "remision": self.remision_input.text()
-            }
+                # Validar que los campos de teléfono y celular solo contengan números
+                if not self.telefono_input.hasAcceptableInput() or not self.celular_input.hasAcceptableInput():
+                    raise ValueError("Los campos de teléfono y celular deben contener solo números.")
 
-            # Realizar la solicitud POST para guardar el paciente
-            response = requests.post('http://localhost:5000/paciente/nuevo', json=data)
+                # Obtener los datos del paciente desde los campos de entrada
+                data = {
+                    "documento": self.documento_input.text(),
+                    "nombre": self.nombre_input.text(),
+                    "edad": edad,
+                    "fecha_nacimiento": self.fecha_nacimiento_input.date().toString("yyyy-MM-dd"),
+                    "id_escolaridad": self.escolaridad_combo.currentData(),
+                    "profesion": self.profesion_input.text(),
+                    "telefono": self.telefono_input.text(),
+                    "celular": self.celular_input.text(),
+                    "remision": self.remision_input.text()
+                }
 
-            if response.status_code == 201:
-                # Mostrar mensaje de éxito
-                success_msg = QMessageBox()
-                success_msg.setIcon(QMessageBox.Information)  # Icono de información para éxito
-                success_msg.setWindowTitle("Éxito")
-                success_msg.setText("Paciente guardado correctamente.")
-                success_msg.setStyleSheet("""
+                # Realizar la solicitud POST para guardar el paciente
+                response = requests.post('http://localhost:5000/paciente/nuevo', json=data)
+
+                if response.status_code == 201:
+                    # Mostrar mensaje de éxito
+                    success_msg = QMessageBox()
+                    success_msg.setIcon(QMessageBox.Information)  # Icono de información para éxito
+                    success_msg.setWindowTitle("Éxito")
+                    success_msg.setText("Paciente guardado correctamente.")
+                    success_msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #f8f8f8;
+                            font-size: 10px;
+                        }
+                        QLabel {
+                            font-size: 12px;
+                            color: #333333;
+                        }
+                        QPushButton {
+                            background-color: #005BBB;
+                            font-size: 10px;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        }
+                        QPushButton:hover {
+                            background-color: #004C99;
+                        }
+                    """)
+                    success_msg.exec_()
+                    paciente = response.json()
+                    self.paciente_seleccionado = paciente  # Guardar la respuesta del paciente
+                    self.guardar_y_abrir_hc()  # Guardar el paciente y abrir la ventana de evaluación neuropsicológica
+                else:
+                    # Mostrar mensaje de error si la respuesta no fue exitosa
+                    error_msg = QMessageBox()
+                    error_msg.setIcon(QMessageBox.Critical)
+                    error_msg.setWindowTitle("Error")
+                    error_msg.setText(f"Error al guardar el paciente. Código: {response.status_code}, hay datos incorrectos.")
+                    error_msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #f8f8f8;
+                            font-size: 10px;
+                        }
+                        QLabel {
+                            font-size: 12px;
+                            color: #333333;
+                        }
+                        QPushButton {
+                            background-color: #005BBB;
+                            font-size: 10px;
+                            color: white;
+                            padding: 2px;
+                            border-radius: 2px;
+                        }
+                        QPushButton:hover {
+                            background-color: #004C99;
+                        }
+                    """)
+                    error_msg.exec_()
+
+            except ValueError as ve:
+                # Mostrar mensaje de advertencia si hay algún campo vacío o si la edad no es válida
+                warning_msg = QMessageBox()
+                warning_msg.setIcon(QMessageBox.Warning)
+                warning_msg.setWindowTitle("Advertencia")
+                warning_msg.setText(str(ve))
+                warning_msg.setStyleSheet("""
                     QMessageBox {
                         background-color: #f8f8f8;
                         font-size: 10px;
@@ -285,121 +369,7 @@ class RegistrarPacienteWindow(QMainWindow):
                         background-color: #004C99;
                     }
                 """)
-                success_msg.exec_()
-                paciente = response.json()
-                self.paciente_seleccionado = paciente  # Guardar la respuesta del paciente
-                self.guardar_y_abrir_hc()  # Guardar el paciente y abrir la ventana de evaluación neuropsicológica
-            else:
-                # Mostrar mensaje de error si la respuesta no fue exitosa
-                error_msg = QMessageBox()
-                error_msg.setIcon(QMessageBox.Critical)
-                error_msg.setWindowTitle("Error")
-                error_msg.setText(f"Error al guardar el paciente. Código: {response.status_code}")
-                error_msg.setStyleSheet("""
-                    QMessageBox {
-                        background-color: #f8f8f8;
-                        font-size: 10px;
-                    }
-                    QLabel {
-                        font-size: 12px;
-                        color: #333333;
-                    }
-                    QPushButton {
-                        background-color: #005BBB;
-                        font-size: 10px;
-                        color: white;
-                        padding: 2px;
-                        border-radius: 2px;
-                    }
-                    QPushButton:hover {
-                        background-color: #004C99;
-                    }
-                """)
-                error_msg.exec_()
-
-        except ValueError as ve:
-            # Mostrar mensaje de advertencia si hay algún campo vacío o si la edad no es válida
-            warning_msg = QMessageBox()
-            warning_msg.setIcon(QMessageBox.Warning)
-            warning_msg.setWindowTitle("Advertencia")
-            warning_msg.setText(str(ve))
-            warning_msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: #f8f8f8;
-                    font-size: 10px;
-                }
-                QLabel {
-                    font-size: 12px;
-                    color: #333333;
-                }
-                QPushButton {
-                    background-color: #005BBB;
-                    font-size: 10px;
-                    color: white;
-                    padding: 2px;
-                    border-radius: 2px;
-                }
-                QPushButton:hover {
-                    background-color: #004C99;
-                }
-            """)
-            warning_msg.exec_()
-
-        except requests.exceptions.RequestException as re:
-            # Mostrar ventana de error si hubo un problema con la conexión al servidor
-            error_msg = QMessageBox()
-            error_msg.setIcon(QMessageBox.Critical)
-            error_msg.setWindowTitle("Error de conexión")
-            error_msg.setText(f"No se pudo conectar con el servidor. Detalles: {str(re)}")
-            error_msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: #f8f8f8;
-                    font-size: 10px;
-                }
-                QLabel {
-                    font-size: 12px;
-                    color: #333333;
-                }
-                QPushButton {
-                    background-color: #005BBB;
-                    font-size: 10px;
-                    color: white;
-                    padding: 2px;
-                    border-radius: 2px;
-                }
-                QPushButton:hover {
-                    background-color: #004C99;
-                }
-            """)
-            error_msg.exec_()
-
-        except Exception as e:
-            # Mostrar ventana de error si ocurrió un error inesperado
-            error_msg = QMessageBox()
-            error_msg.setIcon(QMessageBox.Critical)
-            error_msg.setWindowTitle("Error inesperado")
-            error_msg.setText(f"Ocurrió un error inesperado: {str(e)}")
-            error_msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: #f8f8f8;
-                    font-size: 10px;
-                }
-                QLabel {
-                    font-size: 12px;
-                    color: #333333;
-                }
-                QPushButton {
-                    background-color: #005BBB;
-                    font-size: 10px;
-                    color: white;
-                    padding: 2px;
-                    border-radius: 2px;
-                }
-                QPushButton:hover {
-                    background-color: #004C99;
-                }
-            """)
-            error_msg.exec_()
+                warning_msg.exec_()
 
     
 
