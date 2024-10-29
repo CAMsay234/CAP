@@ -1,9 +1,11 @@
 import sys
 import os
 import requests  # Asegúrate de tener instalado requests: pip install requests
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, 
-                             QPushButton, QVBoxLayout, QHBoxLayout, QWidget, 
-                             QSpacerItem, QSizePolicy, QMessageBox)
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, 
+    QVBoxLayout, QHBoxLayout, QWidget, QSpacerItem, 
+    QSizePolicy, QMessageBox
+)
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 from registro import RegisterWindow
@@ -13,9 +15,9 @@ class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Configurar la ventana
+        # Configuración de la ventana
         self.setWindowTitle("Sistema Automatizado para la Gestión de Datos Clínicos y Neuropsicológicos")
-        self.showMaximized()  # Abrir la ventana maximizada
+        self.showFullScreen()  # Mostrar la ventana en pantalla completa
 
         # Contador de intentos de login
         self.intentos_login = 0
@@ -40,7 +42,7 @@ class LoginWindow(QMainWindow):
 
         # Título
         titulo = QLabel("SISTEMA AUTOMATIZADO PARA LA GESTIÓN DE DATOS CLÍNICOS Y NEUROPSICOLÓGICOS")
-        font = QFont('Arial', 24, QFont.Bold)  # Negrita
+        font = QFont('Arial', 24, QFont.Bold)
         titulo.setFont(font)
         titulo.setStyleSheet("color: white;")
         titulo.setAlignment(Qt.AlignCenter)
@@ -133,10 +135,10 @@ class LoginWindow(QMainWindow):
             QMessageBox {
                 background-color: #f0f0f0;
                 font-size: 14px;
-                color: #005BBB;  /* Cambia el color a azul */
+                color: #005BBB;
             }
             QLabel {
-                color: #005BBB;  /* Asegura que el texto del mensaje sea azul */
+                color: #005BBB;
             }
             QPushButton {
                 background-color: #005BBB;
@@ -173,6 +175,6 @@ if __name__ == '__main__':
     load_stylesheet(app)
 
     ventana = LoginWindow()
-    ventana.showFullScreen()  # Cambiar a showFullScreen()
+    ventana.showFullScreen()  # Cambiar a showFullScreen para pantalla completa
 
     sys.exit(app.exec_())
