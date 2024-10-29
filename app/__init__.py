@@ -8,6 +8,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    @app.route('/')
+    def home():
+        return "¡Bienvenido a la API!"
     # Inicializar la base de datos
     db.init_app(app)
 
@@ -59,5 +62,5 @@ def create_app():
     app.register_blueprint(conversiones_bp)
 
     return app
-
+    
 
