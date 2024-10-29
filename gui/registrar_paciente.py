@@ -320,7 +320,10 @@ class RegistrarPacienteWindow(QMainWindow):
                     error_msg = QMessageBox()
                     error_msg.setIcon(QMessageBox.Critical)
                     error_msg.setWindowTitle("Error")
-                    error_msg.setText(f"Error al guardar el paciente. Código: {response.status_code}, hay datos incorrectos.")
+                    if response.status_code == 400:
+                        error_msg.setText(f"Error al guardar el paciente. hay datos incorrectos.")
+                    else:
+                        error_msg.setText(f"Error al guardar el paciente. Número documento ya existe.")
                     error_msg.setStyleSheet("""
                         QMessageBox {
                             background-color: #f8f8f8;
