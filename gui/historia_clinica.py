@@ -192,7 +192,7 @@ class HistoriaClinicaWindow(QMainWindow):
  
     def volver_a_seleccionar_registrar(self):
         # Ir a la ventana de seleccionar_registrar_paciente.py
-        from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
+        from gui.seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
         self.seleccionar_registrar_window = SeleccionarRegistrarPacienteWindow()
         self.seleccionar_registrar_window.show()
         self.close()  # Cerrar la ventana actual

@@ -5,8 +5,7 @@ from PyQt5.QtCore import Qt, QDate
 import requests  # Para realizar las solicitudes al backend
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtCore import QRegExp
-from datetime import datetime
-from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la clase de la ventana de evaluación neuropsicológica
+from datetime import datetime # Importar la clase de la ventana de evaluación neuropsicológica
 
 class RegistrarPacienteWindow(QMainWindow):
     def __init__(self):
@@ -192,7 +191,7 @@ class RegistrarPacienteWindow(QMainWindow):
         self.setCentralWidget(widget)
 
     def abrir_seleccionar_registrar_paciente(self):
-        from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow  # Importar la nueva ventana de registro de pacientes
+        from gui.seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow  # Importar la nueva ventana de registro de pacientes
         self.seleccionar_registrar_paciente_window = SeleccionarRegistrarPacienteWindow()   # Crear la ventana de registrar paciente
         self.seleccionar_registrar_paciente_window.show()  # Mostrar la ventana de registrar paciente
         self.close()  # Cerrar la ventana actual

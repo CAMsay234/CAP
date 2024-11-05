@@ -3,48 +3,88 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushB
 from PyQt5.QtGui import QFont
 import requests
 import re
- 
+
 class RegisterWindow(QMainWindow):
     def __init__(self):
         super().__init__()
- 
+
         # Configurar la ventana
         self.setWindowTitle("Registro de Usuario")
         self.setGeometry(100, 100, 400, 300)
- 
+        self.setStyleSheet("background-color: #005BBB;")  # Fondo azul
+
         # Layout principal
         layout = QVBoxLayout()
- 
+
         # Campo de nombre de usuario
         self.username_input = QLineEdit(self)
         self.username_input.setPlaceholderText("Nombre de Usuario")
         self.username_input.setFont(QFont("Arial", 12))
+        self.username_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border-radius: 10px;
+                padding-left: 10px;
+                font-size: 16px;
+                height: 40px;
+                width: 300px;
+            }
+        """)
         layout.addWidget(self.username_input)
- 
+
         # Campo de correo electrónico
         self.email_input = QLineEdit(self)
         self.email_input.setPlaceholderText("Correo Electrónico")
         self.email_input.setFont(QFont("Arial", 12))
+        self.email_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border-radius: 10px;
+                padding-left: 10px;
+                font-size: 16px;
+                height: 40px;
+                width: 300px;
+            }
+        """)
         layout.addWidget(self.email_input)
- 
+
         # Campo de contraseña
         self.password_input = QLineEdit(self)
         self.password_input.setPlaceholderText("Contraseña")
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setFont(QFont("Arial", 12))
+        self.password_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border-radius: 10px;
+                padding-left: 10px;
+                font-size: 16px;
+                height: 40px;
+                width: 300px;
+            }
+        """)
         layout.addWidget(self.password_input)
- 
+
         # Botón de registro
         self.register_button = QPushButton("Registrar", self)
         self.register_button.setFont(QFont("Arial", 12))
+        self.register_button.setStyleSheet("""
+            QPushButton {
+                background-color: #FFFFFF;
+                border-radius: 10px;
+                font-size: 16px;
+                height: 50px;
+                width: 150px;
+            }
+        """)
         self.register_button.clicked.connect(self.register_user)
         layout.addWidget(self.register_button)
- 
+
         # Establecer el layout
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
-    
+
     def validar_registro(self):
         """Valida los datos ingresados para el registro."""
         username = self.username_input.text()
@@ -211,13 +251,13 @@ class RegisterWindow(QMainWindow):
 def load_stylesheet(app):
     with open("styles.qss", "r") as file:
         app.setStyleSheet(file.read())
- 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
- 
+
     # Cargar el stylesheet general
     load_stylesheet(app)
- 
+
     ventana = RegisterWindow()
     ventana.show()
     sys.exit(app.exec_())
