@@ -106,6 +106,84 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
 
+        # Llamar a la función para cargar los datos del paciente
+        self.cargar_datos_paciente()
+
+    def cargar_datos_paciente(self):
+            """Función para cargar los datos de las evaluaciones del paciente."""
+            try:
+                # Obtener el ID de la prueba de atención y concentración
+                response = requests.get('http://localhost:5000/pruebas')
+                if response.status_code == 200:
+                    pruebas = response.json()
+                    self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "funciones neurocognitivas"), None)
+                    if self.prueba_id is None:
+                        print("Prueba de funciones neurocognitivas no encontrada.")
+                        return
+                else:
+                    print(f"Error al obtener las pruebas: {response.status_code}")
+                    return
+
+                # Obtener todas las subpruebas para crear un mapeo basado en los nombres
+                response = requests.get('http://localhost:5000/subpruebas')
+                if response.status_code == 200:
+                    subpruebas = response.json()
+                    # Crear un mapeo de ID de subprueba a nombre
+                    subpruebas_map = {sp['id']: sp['nombre'] for sp in subpruebas}
+                else:
+                    print(f"Error al obtener las subpruebas: {response.status_code}")
+                    subpruebas_map = {}
+
+                # Obtener las evaluaciones del paciente para esta prueba
+                url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    evaluaciones = response.json()
+                    print(f"Evaluaciones obtenidas: {evaluaciones}")
+
+                    # Llenar los campos de la tabla con los datos correspondientes
+                    for evaluacion in evaluaciones:
+                        subprueba_id = evaluacion['id_subprueba']
+                        subprueba_nombre = subpruebas_map.get(subprueba_id, "Desconocido")
+
+                        # Asignar datos a las subpruebas normales
+                        for row in range(1, self.table_layout.rowCount()):
+                            widget = self.table_layout.itemAtPosition(row, 0).widget()
+                            if isinstance(widget, QLabel):
+                                nombre_subprueba = widget.text().strip()
+                                if nombre_subprueba == subprueba_nombre:
+                                    self.table_layout.itemAtPosition(row, 1).widget().setText(str(evaluacion['puntaje']))
+                                    self.table_layout.itemAtPosition(row, 2).widget().setText(evaluacion['interpretacion'])
+                                    break
+
+                        if subprueba_nombre == "Otra Prueba":
+                            otra_prueba_widget = self.table_layout.itemAtPosition(8, 0).widget()
+                            otra_prueba_widget.setText("Otra Prueba")
+                            self.table_layout.itemAtPosition(11, 1).widget().setText(str(evaluacion['puntaje']))
+                            self.table_layout.itemAtPosition(11, 2).widget().setText(evaluacion['interpretacion'])
+
+                    print("Datos cargados exitosamente.")
+                elif response.status_code == 404:
+                    print("No se encontraron evaluaciones para este paciente.")
+                else:
+                    print(f"Error al obtener las evaluaciones: {response.status_code}")
+
+                # Obtener los comentarios del paciente para esta prueba
+                url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    comentarios = response.json()
+                    print(f"Comentarios obtenidos: {comentarios}")
+
+                    # Llenar los campos de comentarios con los datos obtenidos
+                    for i, comentario in enumerate(comentarios):
+                        if i < self.comment_layout.rowCount():
+                            self.comment_layout.itemAtPosition(i, 1).widget().setPlainText(comentario['comentario'])
+                else:
+                    print(f"Error al obtener los comentarios: {response.status_code}")
+
+            except requests.exceptions.RequestException as e:
+                print(f"Error de conexión: {str(e)}")
 
     def abrir_evaluacion_neuropsicologica(self):
         if hasattr(self, 'paciente_seleccionado'):
