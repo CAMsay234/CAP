@@ -1,4 +1,3 @@
-
 import sys
 import os
 import requests
@@ -20,23 +19,24 @@ class SeleccionarPacienteWindow(QMainWindow):
         # Crear un layout horizontal para la barra azul con el logo, título, y botón de "Volver"
         header_layout = QHBoxLayout()
 
-        # Barra azul más pequeña
+        # Barra azul más grande
         header_background = QWidget()
         header_background.setStyleSheet("background-color: #005BBB;")
         header_background_layout = QHBoxLayout(header_background)
         header_background_layout.setContentsMargins(0, 0, 0, 0)
-        header_background.setFixedHeight(80)  # Ajusta la altura del banner
+        header_background.setFixedHeight(200)  # Ajusta la altura del banner
 
         # Logo de UPB
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
         self.logo = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(70, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Logo más pequeño
+        pixmap = QPixmap(image_path).scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Logo más grande
         self.logo.setPixmap(pixmap)
         header_background_layout.addWidget(self.logo, alignment=Qt.AlignLeft)
 
         # Título de la ventana
         titulo = QLabel("SELECCIONAR PACIENTE")
-        titulo.setObjectName("titulo")  # Usar el estilo del archivo .qss para títulos
+        titulo.setFont(QFont('Arial', 28, QFont.Bold))  # Tamaño de fuente más grande
+        titulo.setStyleSheet("color: white;")
         header_background_layout.addWidget(titulo, alignment=Qt.AlignCenter)
 
         # Botón "Volver" para regresar a la página anterior
@@ -143,7 +143,7 @@ class SeleccionarPacienteWindow(QMainWindow):
         self.boton_historia_clinica.clicked.connect(self.ir_a_historia_clinica)
         form_layout.addWidget(self.boton_historia_clinica, alignment=Qt.AlignCenter)
 
-        #Crear boton para ir a evaluacion neuropsicologica
+        # Crear botón para ir a evaluación neuropsicológica
         self.boton_evaluacion_neuropsicologica = QPushButton("Evaluación Neuropsicológica")
         self.boton_evaluacion_neuropsicologica.setFont(QFont('Arial', 14))
         self.boton_evaluacion_neuropsicologica.setStyleSheet("""
@@ -152,7 +152,7 @@ class SeleccionarPacienteWindow(QMainWindow):
                 color: white;
                 border-radius: 10px;
                 padding: 10px;
-                width: 200px;
+                width: 400px;
             }
             QPushButton:hover {
                 background-color: #003F73;
@@ -209,10 +209,6 @@ class SeleccionarPacienteWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al conectar con el servidor: {str(e)}")
 
-
-
-
-
     def volver_a_seleccionar_registrar(self):
         # Importar y abrir la ventana anterior
         from gui.seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
@@ -234,7 +230,7 @@ class SeleccionarPacienteWindow(QMainWindow):
         if hasattr(self, 'paciente_seleccionado'):
             # Pasar los datos del paciente seleccionado a la nueva ventana
             from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
-            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)#pself.paciente_seleccionado)
+            self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
             self.evaluacion_neuropsicologica_window.show()
             self.close()
 

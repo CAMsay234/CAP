@@ -38,20 +38,14 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
         # Campos de Código y Nombre del paciente
         self.label_codigo = QLabel(f"Código: {self.paciente_seleccionado['codigo_hc']}")
         self.label_codigo.setFont(QFont('Arial', 14))
-        self.input_codigo = QLineEdit()
-        self.input_codigo.setFixedWidth(100)
         
         self.label_nombre = QLabel(f"Nombre paciente: {self.paciente_seleccionado['nombre']}")
         self.label_nombre.setFont(QFont('Arial', 14))
-        self.input_nombre = QLineEdit()
-        self.input_nombre.setFixedWidth(300)
-        
+    
         # Añadir los campos de código y nombre al banner
         header_background_layout.addWidget(self.label_codigo)
-        header_background_layout.addWidget(self.input_codigo)
         header_background_layout.addSpacerItem(QSpacerItem(10, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))  # Reducir el tamaño del espaciador
         header_background_layout.addWidget(self.label_nombre)
-        header_background_layout.addWidget(self.input_nombre)
         
         # Botones de "Actualizar Datos Personales" y "Actualizar Historia Clínica" en el banner azul
         self.btn_actualizar_datos = QPushButton("ACTUALIZAR DATOS\nPERSONALES")
