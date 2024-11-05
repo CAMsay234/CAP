@@ -46,10 +46,7 @@ class PruebaLenguajeWindow(QMainWindow):
         self.codigo_label = QLabel(f"Código:{self.paciente_seleccionado['codigo_hc']}")
         self.codigo_label.setFont(QFont('Arial', 12))
         self.codigo_label.setStyleSheet("color: white;")
-        self.codigo_input = QLineEdit()
-        self.codigo_input.setFixedWidth(100)
         header_background_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
-        header_background_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
 
         header_layout.addWidget(header_background)
         main_layout.addLayout(header_layout)
@@ -109,6 +106,97 @@ class PruebaLenguajeWindow(QMainWindow):
         # Configurar el scroll y añadir el widget principal
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
+
+    def cargar_datos_paciente(self):
+        """Función para cargar los datos de las evaluaciones del paciente."""
+        try:
+            # Obtener el ID de la prueba de lenguaje
+            response = requests.get('http://localhost:5000/pruebas')
+            if response.status_code == 200:
+                pruebas = response.json()
+                self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "lenguaje"), None)
+                if self.prueba_id is None:
+                    print("Prueba de lenguaje no encontrada.")
+                    return
+            else:
+                print(f"Error al obtener las pruebas: {response.status_code}")
+                return
+
+            # Obtener todas las subpruebas para crear un mapeo basado en los nombres
+            response = requests.get('http://localhost:5000/subpruebas')
+            if response.status_code == 200:
+                subpruebas = response.json()
+                # Crear un mapeo de nombre de subprueba a ID
+                subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
+            else:
+                print(f"Error al obtener las subpruebas: {response.status_code}")
+                subpruebas_map = {}
+
+            # Obtener las evaluaciones del paciente para esta prueba
+            url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                evaluaciones = response.json()
+                print(f"Evaluaciones obtenidas: {evaluaciones}")
+
+                # Llenar los campos de la tabla con los datos correspondientes
+                for evaluacion in evaluaciones:
+                    subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
+
+                    # Asignar datos a las subpruebas normales
+                    for row in range(1, self.table_layout.rowCount()):
+                        widget = self.table_layout.itemAtPosition(row, 0).widget()
+                        if isinstance(widget, QLabel):
+                            nombre_subprueba = widget.text().strip()
+                            if nombre_subprueba == subprueba_nombre:
+                                self.table_layout.itemAtPosition(row, 1).widget().setText(str(evaluacion['puntaje']))
+                                self.table_layout.itemAtPosition(row, 2).widget().setText(str(evaluacion['media']))
+                                self.table_layout.itemAtPosition(row, 3).widget().setText(str(evaluacion['desviacion_estandar']))
+                                self.table_layout.itemAtPosition(row, 4).widget().setText(evaluacion['interpretacion'])
+                                break
+
+                    if subprueba_nombre == "Otra prueba":
+                        otra_prueba_widget = self.table_layout.itemAtPosition(8, 0).widget()
+                        otra_prueba_widget.setText("Otra prueba")
+                        self.table_layout.itemAtPosition(8, 1).widget().setText(str(evaluacion['puntaje']))
+                        self.table_layout.itemAtPosition(8, 2).widget().setText(str(evaluacion['media']))
+                        self.table_layout.itemAtPosition(8, 3).widget().setText(str(evaluacion['desviacion_estandar']))
+                        self.table_layout.itemAtPosition(8, 4).widget().setText(evaluacion['interpretacion'])
+
+                print("Datos cargados exitosamente.")
+            elif response.status_code == 404:
+                print("No se encontraron evaluaciones para este paciente.")
+            else:
+                print(f"Error al obtener las evaluaciones: {response.status_code}")
+
+            # Obtener los comentarios del paciente para esta prueba
+            url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/"
+            response = requests.get(url)
+            if response.status_code == 200:
+                comentarios = response.json()
+                print(f"Comentarios obtenidos: {comentarios}")
+
+                # Llenar los campos de comentarios con los datos obtenidos
+                for i, comentario in enumerate(comentarios):
+                    if i < self.comment_layout.rowCount():
+                        self.comment_layout.itemAtPosition(i, 1).widget().setPlainText(comentario['comentario'])
+            else:
+                print(f"Error al obtener los comentarios: {response.status_code}")
+
+            # Obtener la conclusión del paciente para esta prueba
+            url = f"http://localhost:5000/conclusiones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/"
+            response = requests.get(url)
+            if response.status_code == 200:
+                conclusion = response.json()
+                print(f"Conclusión obtenida: {conclusion}")
+
+                # Llenar el campo de conclusión con los datos obtenidos
+                self.conclusion_text_edit.setPlainText(conclusion['comentario'])
+            else:
+                print(f"Error al obtener la conclusión: {response.status_code}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error de conexión: {str(e)}")
 
     def abrir_evaluacion_neuropsicologica(self):
         """Función para abrir la ventana de Evaluación Neuropsicológica."""
@@ -319,7 +407,7 @@ class PruebaLenguajeWindow(QMainWindow):
         def procesar_comentario(i):
             comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()
             comment_text = self.comment_layout.itemAtPosition(i, 1).widget().toPlainText()
-
+    
             # Guardar los comentarios en la base de datos
             data = {
                 "codigo_hc": self.paciente_seleccionado['codigo_hc'],  # Usar el código del paciente seleccionado
@@ -327,54 +415,72 @@ class PruebaLenguajeWindow(QMainWindow):
                 "tipo_comentario": comment_label,
                 "comentario": comment_text
             }
-            response = requests.post('http://localhost:5000/comentarios', json=data)
-            if response.status_code != 201:
-                print(f"Error al guardar el comentario '{comment_label}'")
-
+    
+            # Verificar si el comentario ya existe
+            check_url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{comment_label}"
+            response = requests.get(check_url)
+            
+            if response.status_code == 404:
+                # No existe, realizar un INSERT
+                response = requests.post('http://localhost:5000/comentarios', json=data)
+                if response.status_code == 201:
+                    print(f"Comentario '{comment_label}' guardado exitosamente.")
+                else:
+                    print(f"Error al guardar el comentario '{comment_label}': {response.status_code} - {response.text}")
+            elif response.status_code == 200:
+                # Ya existe, realizar un UPDATE
+                response = requests.put(check_url, json=data)
+                if response.status_code == 200:
+                    print(f"Comentario '{comment_label}' actualizado exitosamente.")
+                else:
+                    print(f"Error al actualizar el comentario '{comment_label}': {response.status_code} - {response.text}")
+            else:
+                print(f"Error al verificar el comentario '{comment_label}': {response.status_code} - {response.text}")
+    
         # Obtener el nombre de la prueba desde el título de la ventana
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
-
+    
         # Obtener el ID de la prueba desde la API
         response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas")
             return
-
+    
         pruebas = response.json()
         prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
         if prueba_id is None:
             print("Prueba no encontrada en la base de datos.")
             return
-
+    
         # Crear y empezar hilos para cada comentario
         threads = []
         for i in range(self.comment_layout.rowCount()):
             thread = threading.Thread(target=procesar_comentario, args=(i,))
             threads.append(thread)
             thread.start()
-
+    
         # Esperar a que todos los hilos terminen
         for thread in threads:
             thread.join()
-
+    
         print("Comentarios guardados exitosamente")
     
     def guardar_conclusion(self):
         # Obtener el nombre de la prueba desde el título de la ventana
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
-
+    
         # Obtener el ID de la prueba desde la API
         response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas")
             return
-
+    
         pruebas = response.json()
         prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
         if prueba_id is None:
             print("Prueba no encontrada en la base de datos.")
             return
-
+    
         # Guardar la conclusión como un comentario adicional
         conclusion_text = self.conclusion_text_edit.toPlainText()
         data = {
@@ -383,12 +489,28 @@ class PruebaLenguajeWindow(QMainWindow):
             "tipo_comentario": "Conclusión",
             "comentario": conclusion_text
         }
-        response = requests.post('http://localhost:5000/comentarios', json=data)
-        if response.status_code != 201:
-            print("Error al guardar la conclusión")
-
-        print("Conclusión guardada exitosamente")
     
+        # Verificar si la conclusión ya existe
+        check_url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/Conclusión"
+        response = requests.get(check_url)
+        
+        if response.status_code == 404:
+            # No existe, realizar un INSERT
+            response = requests.post('http://localhost:5000/comentarios', json=data)
+            if response.status_code == 201:
+                print("Conclusión guardada exitosamente.")
+            else:
+                print(f"Error al guardar la conclusión: {response.status_code} - {response.text}")
+        elif response.status_code == 200:
+            # Ya existe, realizar un UPDATE
+            response = requests.put(check_url, json=data)
+            if response.status_code == 200:
+                print("Conclusión actualizada exitosamente.")
+            else:
+                print(f"Error al actualizar la conclusión: {response.status_code} - {response.text}")
+        else:
+            print(f"Error al verificar la conclusión: {response.status_code} - {response.text}")    
+            
     def guardar_todo(self):
         self.guardar_prueba()
         self.guardar_comentarios()
