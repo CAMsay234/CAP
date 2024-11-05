@@ -5,6 +5,10 @@ from gui.main_window import LoginWindow  # Asegúrate de que esta importación s
 from gui.registro import RegisterWindow  # Asegúrate de que esta importación sea correcta
 from datetime import timedelta
 import sys
+import signal
+
+# Evento para detener el servidor Flask
+stop_event = threading.Event()
 
 def run_flask():
     app = create_app()
@@ -14,7 +18,16 @@ def run_pyqt():
     app = QApplication(sys.argv)
     ventana = LoginWindow()
     ventana.showFullScreen()  # Mostrar la ventana en pantalla completa
+
+    # Conectar la señal de cierre de la aplicación para detener el servidor Flask
+    app.aboutToQuit.connect(stop_flask_server)
+
     sys.exit(app.exec_())
+
+def stop_flask_server():
+    stop_event.set()
+    # Enviar una señal para detener el servidor Flask
+    signal.pthread_kill(flask_thread.ident, signal.SIGINT)
 
 if __name__ == "__main__":
     # Iniciar el servidor Flask en un hilo separado

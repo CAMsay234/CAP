@@ -17,14 +17,14 @@ class LoginWindow(QMainWindow):
 
         # Configuración de la ventana
         self.setWindowTitle("Sistema Automatizado para la Gestión de Datos Clínicos y Neuropsicológicos")
-        self.showFullScreen()  # Mostrar la ventana en pantalla completa
-
+        self.showMaximized() # Mostrar la ventana en pantalla completa
+        self.setStyleSheet("background-color: #005BBB;")  # Fondo azul
+        
         # Contador de intentos de login
         self.intentos_login = 0
 
         # Layout principal
         main_layout = QVBoxLayout()
-        main_layout.backgroundColor = "#0833a2"
         # Layout superior con imagen
         top_layout = QHBoxLayout()
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')
@@ -57,16 +57,45 @@ class LoginWindow(QMainWindow):
 
         self.input_usuario = QLineEdit()
         self.input_usuario.setPlaceholderText("USUARIO")
+        self.input_usuario.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border-radius: 10px;
+                padding-left: 10px;
+                font-size: 16px;
+                height: 40px;
+                width: 300px;
+            }
+        """)
 
         self.input_contrasena = QLineEdit()
         self.input_contrasena.setPlaceholderText("CONTRASEÑA")
         self.input_contrasena.setEchoMode(QLineEdit.Password)
+        self.input_contrasena.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border-radius: 10px;
+                padding-left: 10px;
+                font-size: 16px;
+                height: 40px;
+                width: 300px;
+            }
+        """)
 
         form_layout.addWidget(self.input_usuario, alignment=Qt.AlignCenter)
         form_layout.addWidget(self.input_contrasena, alignment=Qt.AlignCenter)
 
         # Botón de login
         self.boton_login = QPushButton("ENTRAR")
+        self.boton_login.setStyleSheet("""
+            QPushButton {
+                background-color: #FFFFFF;
+                border-radius: 10px;
+                font-size: 16px;
+                height: 50px;
+                width: 150px;
+            }
+        """)
         form_layout.addWidget(self.boton_login, alignment=Qt.AlignCenter)
 
         # Layout para el botón de registro
@@ -74,6 +103,15 @@ class LoginWindow(QMainWindow):
 
         self.boton_registro = QPushButton("Registrarse")
         self.boton_registro.setProperty('flat', True)
+        self.boton_registro.setStyleSheet("""
+            QPushButton[flat="true"] {
+                background-color: none;
+                border: none;
+                width: 150px;
+                color: white;
+                text-decoration: underline;
+            }
+        """)
         buttons_layout.addWidget(self.boton_registro, alignment=Qt.AlignCenter)
 
         form_layout.addLayout(buttons_layout)
@@ -163,18 +201,11 @@ class LoginWindow(QMainWindow):
         self.registro_ventana = RegisterWindow()
         self.registro_ventana.show()
 
-# Función para cargar el archivo de estilos
-def load_stylesheet(app):
-    stylesheet_path = os.path.join(os.path.dirname(__file__), 'styles.qss')
-    with open(stylesheet_path, "r") as file:
-        app.setStyleSheet(file.read())
-
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    load_stylesheet(app)
 
     ventana = LoginWindow()
-    ventana.showFullScreen()  # Cambiar a showFullScreen para pantalla completa
+    ventana.showMaximized()  # Cambiar a showFullScreen para pantalla completa
 
     sys.exit(app.exec_())

@@ -259,7 +259,7 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
 
     def abrir_ventana_lenguaje(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_lenguaje import PruebaLenguajeWindow
+            from gui.prueba_lenguaje import PruebaLenguajeWindow
             self.ventana_lenguaje = PruebaLenguajeWindow(self.paciente_seleccionado)
             self.ventana_lenguaje.show()
             self.close()
