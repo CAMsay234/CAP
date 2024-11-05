@@ -44,6 +44,21 @@ def obtener_comentarios():
     } for c in comentarios]
     return jsonify(comentarios_list), 200
 
+# Ruta para obtener todos los comentarios de un paciente y una prueba específicos
+@comentarios_bp.route('/comentarios/<int:codigo_hc>/<int:id_prueba>', methods=['GET'])
+def obtener_comentarios_por_prueba(codigo_hc, id_prueba):
+    comentarios = Comentarios.query.filter_by(codigo_hc=codigo_hc, id_prueba=id_prueba).all()
+    if not comentarios:
+        return jsonify({"error": "No se encontraron comentarios para esta prueba"}), 404
+    comentarios_list = [{
+        "codigo_hc": c.codigo_hc,
+        "id_prueba": c.id_prueba,
+        "tipo_comentario": c.tipo_comentario,
+        "comentario": c.comentario
+    } for c in comentarios]
+    return jsonify(comentarios_list), 200
+
+
 # Obtener un comentario por clave compuesta (GET)
 @comentarios_bp.route('/comentarios/<int:codigo_hc>/<int:id_prueba>/<string:tipo_comentario>', methods=['GET'])
 def obtener_comentario(codigo_hc, id_prueba, tipo_comentario):
