@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, QTimer
-from registro import RegisterWindow
-from tipo_historia import TipoHistoriaWindow
+from gui.registro import RegisterWindow  # Ajusta la importación
+from gui.tipo_historia import TipoHistoriaWindow  # Ajusta la importación
 
 class LoginWindow(QMainWindow):
     def __init__(self):
@@ -24,7 +24,7 @@ class LoginWindow(QMainWindow):
 
         # Layout principal
         main_layout = QVBoxLayout()
-
+        main_layout.backgroundColor = "#0833a2"
         # Layout superior con imagen
         top_layout = QHBoxLayout()
         image_path = os.path.join(os.path.dirname(__file__), 'src', 'upb.png')

@@ -125,21 +125,21 @@ class SeleccionarRegistrarPacienteWindow(QMainWindow):
 
     def abrir_tipo_historia(self):
         """Cierra la ventana actual y abre la ventana TipoHistoriaWindow."""
-        from tipo_historia import TipoHistoriaWindow  # Import retrasado para evitar el ciclo
+        from gui.tipo_historia import TipoHistoriaWindow  # Import retrasado para evitar el ciclo
         self.tipo_historia_window = TipoHistoriaWindow()  # Crear la ventana anterior
         self.tipo_historia_window.show()  # Mostrar la ventana anterior
         self.close()  # Cerrar la ventana actual
 
     def abrir_registrar_paciente(self):
         """Cierra la ventana actual y abre la ventana RegistrarPacienteWindow."""
-        from registrar_paciente import RegistrarPacienteWindow  # Importar la nueva ventana de registro de pacientes
+        from gui.registrar_paciente import RegistrarPacienteWindow  # Importar la nueva ventana de registro de pacientes
         self.registrar_paciente_window = RegistrarPacienteWindow()  # Crear la ventana de registrar paciente
         self.registrar_paciente_window.show()  # Mostrar la ventana de registrar paciente
         self.close()  # Cerrar la ventana actual
 
     def abrir_seleccionar_paciente(self):
         """Cierra la ventana actual y abre la ventana SeleccionarPacienteWindow."""
-        from seleccionar_paciente import SeleccionarPacienteWindow  # Importar la ventana de selección de paciente
+        from gui.seleccionar_paciente import SeleccionarPacienteWindow  # Importar la ventana de selección de paciente
         self.seleccionar_paciente_window = SeleccionarPacienteWindow()  # Crear la ventana de selección de paciente
         self.seleccionar_paciente_window.show()  # Mostrar la ventana de selección de paciente
         self.close()  # Cerrar la ventana actual

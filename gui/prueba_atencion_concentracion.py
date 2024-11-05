@@ -317,7 +317,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
 
     def abrir_evaluacion_neuropsicologica(self):
         """Función para abrir la ventana de Evaluación Neuropsicológica."""
-        from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la nueva ventana de evaluación neuropsicológica
+        from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow  # Importar la nueva ventana de evaluación neuropsicológica
         self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)  # Crear la ventana de evaluación neuropsicológica
         self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de evaluación neuropsicológica
         self.close()  # Cerrar la ventana actual

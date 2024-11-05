@@ -215,7 +215,7 @@ class SeleccionarPacienteWindow(QMainWindow):
 
     def volver_a_seleccionar_registrar(self):
         # Importar y abrir la ventana anterior
-        from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
+        from gui.seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
         self.seleccionar_registrar_window = SeleccionarRegistrarPacienteWindow()
         self.seleccionar_registrar_window.show()
         self.close()
@@ -223,7 +223,7 @@ class SeleccionarPacienteWindow(QMainWindow):
     def ir_a_historia_clinica(self):
         if hasattr(self, 'paciente_seleccionado'):
             # Pasar los datos del paciente seleccionado a la nueva ventana
-            from historia_clinica import HistoriaClinicaWindow
+            from gui.historia_clinica import HistoriaClinicaWindow
             self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)
             self.historia_clinica_window.show()
             self.close()  # Cerrar la ventana actual
@@ -233,7 +233,7 @@ class SeleccionarPacienteWindow(QMainWindow):
     def ir_a_evaluacion_neuropsicologica(self):
         if hasattr(self, 'paciente_seleccionado'):
             # Pasar los datos del paciente seleccionado a la nueva ventana
-            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+            from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
             self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)#pself.paciente_seleccionado)
             self.evaluacion_neuropsicologica_window.show()
             self.close()

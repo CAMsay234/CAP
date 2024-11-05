@@ -4,9 +4,9 @@ import requests
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QWidget, QScrollArea, QFormLayout, QSpacerItem, QSizePolicy, QDialog, QApplication, QMessageBox
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
-from areas import AreasWindow
-from estado_mental import EstadoMentalWindow
-from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+from gui.areas import AreasWindow
+from gui.estado_mental import EstadoMentalWindow
+from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
  
 class HistoriaClinicaWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):

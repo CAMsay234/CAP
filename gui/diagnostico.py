@@ -285,7 +285,7 @@ class DiagnosticoWindow(QMainWindow):
     def volver(self):
         """Función para volver a la pantalla de evaluación neuropsicológica."""
         self.close()
-        from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+        from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
         self.evaluacion_neuropsicologica = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
         self.evaluacion_neuropsicologica.show()
 

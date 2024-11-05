@@ -236,7 +236,7 @@ class RegistrarPacienteWindow(QMainWindow):
 
     def guardar_y_abrir_hc(self):
         """Cierra la ventana actual y abre la ventana EvaluacionNeuropsicologicaWindow."""
-        from historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
+        from gui.historia_clinica import HistoriaClinicaWindow  # Importar la nueva ventana de registro de pacientes
         if hasattr(self, 'paciente_seleccionado'):
             self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)  
             self.historia_clinica_window.show()  
