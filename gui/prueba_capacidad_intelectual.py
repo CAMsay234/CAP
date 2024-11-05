@@ -47,10 +47,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         self.codigo_label = QLabel(f"Código:{self.paciente_seleccionado['codigo_hc']}")
         self.codigo_label.setFont(QFont('Arial', 12))
         self.codigo_label.setStyleSheet("color: white;")
-        self.codigo_input = QLineEdit()
-        self.codigo_input.setFixedWidth(100)
         header_background_layout.addWidget(self.codigo_label, alignment=Qt.AlignRight)
-        header_background_layout.addWidget(self.codigo_input, alignment=Qt.AlignRight)
  
         header_layout.addWidget(header_background)
         main_layout.addLayout(header_layout)
@@ -135,8 +132,6 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
             puntuaciones[subprueba] = puntuacion
  
         return puntuaciones
- 
-
     
     def guardar_prueba(self):
         """Función para guardar los valores de la prueba."""
