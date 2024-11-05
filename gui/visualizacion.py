@@ -336,7 +336,7 @@ class VisualizacionWindow(QMainWindow):
         
     def abrir_ventana_anterior(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+            from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
             self.ventana_anterior = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
             self.close()
 if __name__ == "__main__":

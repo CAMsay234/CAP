@@ -2,7 +2,7 @@ import os
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy, QWidget
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
-from seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow  # Importar la nueva ventana
+from gui.seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow  # Importar la nueva ventana
 
 class TipoHistoriaWindow(QMainWindow):
     def __init__(self):
@@ -121,7 +121,7 @@ class TipoHistoriaWindow(QMainWindow):
 
     def regresar_login(self):
         """Regresa a la ventana de Login."""
-        from main_window import LoginWindow  # Importar aquí para evitar el import circular
+        from gui.main_window import LoginWindow  # Importar aquí para evitar el import circular
         self.login_window = LoginWindow()
         self.login_window.show()
         self.close()

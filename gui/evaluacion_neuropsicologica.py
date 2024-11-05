@@ -224,35 +224,35 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
 
     # Funciones para abrir ventanas específicas
     def abrir_ventana_registrar_paciente(self):
-        from registrar_paciente import RegistrarPacienteWindow
+        from gui.registrar_paciente import RegistrarPacienteWindow
         self.ventana_registrar = RegistrarPacienteWindow()
         self.ventana_registrar.show()
         self.close()
 
     def abrir_ventana_historia_clinica(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from historia_clinica import HistoriaClinicaWindow
+            from gui.historia_clinica import HistoriaClinicaWindow
             self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)
             self.historia_clinica_window.show()
             self.close()
 
     def abrir_ventana_atencion_concentracion(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_atencion_concentracion import PruebaAtencionConcentracionWindow
+            from gui.prueba_atencion_concentracion import PruebaAtencionConcentracionWindow
             self.ventana_atencion = PruebaAtencionConcentracionWindow(self.paciente_seleccionado)
             self.ventana_atencion.show()
             self.close()
 
     def abrir_ventana_procesos_perceptuales(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_procesos_perceptuales import PruebaProcesosPerceptualesWindow
+            from gui.prueba_procesos_perceptuales import PruebaProcesosPerceptualesWindow
             self.ventana_procesos = PruebaProcesosPerceptualesWindow(self.paciente_seleccionado)
             self.ventana_procesos.show()
             self.close()
 
     def abrir_ventana_funciones_neurocognitivas(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_funciones_neurocognitivas import PruebaFuncionesNeurocognitivasWindow
+            from gui.prueba_funciones_neurocognitivas import PruebaFuncionesNeurocognitivasWindow
             self.ventana_neurocognitivas = PruebaFuncionesNeurocognitivasWindow(self.paciente_seleccionado)
             self.ventana_neurocognitivas.show()
             self.close()
@@ -266,42 +266,42 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
 
     def abrir_ventana_memoria(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_procesos_memoria import PruebaProcesosMemoriaWindow
+            from gui.prueba_procesos_memoria import PruebaProcesosMemoriaWindow
             self.ventana_memoria = PruebaProcesosMemoriaWindow(self.paciente_seleccionado)
             self.ventana_memoria.show()
             self.close()
 
     def abrir_ventana_funcion_ejecutiva(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_funcion_ejecutiva import PruebaFuncionEjecutivaWindow
+            from gui.prueba_funcion_ejecutiva import PruebaFuncionEjecutivaWindow
             self.ventana_funcion_ejecutiva = PruebaFuncionEjecutivaWindow(self.paciente_seleccionado)
             self.ventana_funcion_ejecutiva.show()
             self.close()
 
     def abrir_ventana_capacidad_intelectual(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from prueba_capacidad_intelectual import PruebaCapacidadIntelectualWindow
+            from gui.prueba_capacidad_intelectual import PruebaCapacidadIntelectualWindow
             self.ventana_capacidad_intelectual = PruebaCapacidadIntelectualWindow(self.paciente_seleccionado)
             self.ventana_capacidad_intelectual.show()
             self.close()
     
     def abrir_seguimiento(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from seguimiento import SeguimientoWindow
+            from gui.seguimiento import SeguimientoWindow
             self.ventana_seguimiento = SeguimientoWindow(self.paciente_seleccionado)
             self.ventana_seguimiento.show()
             self.close()
     
     def abrir_diagnostico(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from diagnostico import DiagnosticoWindow
+            from gui.diagnostico import DiagnosticoWindow
             self.ventana_diagnostico = DiagnosticoWindow(self.paciente_seleccionado)
             self.ventana_diagnostico.show()
             self.close()
 
     def abrir_visualizacion(self):
         if hasattr(self, 'paciente_seleccionado'):
-            from visualizacion import VisualizacionWindow
+            from gui.visualizacion import VisualizacionWindow
             self.ventana_diagnostico = VisualizacionWindow(self.paciente_seleccionado)
             self.ventana_diagnostico.show()
             self.close()

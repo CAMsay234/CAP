@@ -221,7 +221,7 @@ class SeguimientoWindow(QMainWindow):
             return "Error"
         
     def abrir_evaluacion_neuropsicologica(self):
-        from evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
+        from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
         self.close()
         self.evaluacion_neuropsicologica_ventana = EvaluacionNeuropsicologicaWindow(paciente_seleccionado=self.paciente_seleccionado)
         self.evaluacion_neuropsicologica_ventana.show()
