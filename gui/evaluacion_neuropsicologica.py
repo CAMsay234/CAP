@@ -78,14 +78,31 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
                 background-color: #e0e0e0;
             }
         """)
+        self.btn_inicio = QPushButton("INICIO")
+        self.btn_inicio.setMaximumWidth(200)
+        self.btn_inicio.setStyleSheet("""
+            QPushButton {
+                background-color: white;
+                color: #005BBB;
+                font-size: 12px;
+                padding: 8px 20px;
+                border-radius: 5px;
+                
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+        """)
         
         # Conectar los botones con las funciones para abrir las ventanas
         self.btn_actualizar_datos.clicked.connect(self.abrir_ventana_registrar_paciente)
         self.btn_actualizar_historia.clicked.connect(self.abrir_ventana_historia_clinica)
-        
+        self.btn_inicio.clicked.connect(self.abrir_inicio)
+
         # Agregar los botones al layout del banner
         header_background_layout.addWidget(self.btn_actualizar_datos, alignment=Qt.AlignLeft)
         header_background_layout.addWidget(self.btn_actualizar_historia, alignment=Qt.AlignLeft)
+        header_background_layout.addWidget(self.btn_inicio, alignment=Qt.AlignLeft)
 
         # Añadir el layout del fondo azul (con el logo y los botones) al header
         header_layout.addWidget(header_background)
@@ -229,6 +246,12 @@ class EvaluacionNeuropsicologicaWindow(QMainWindow):
             self.historia_clinica_window = HistoriaClinicaWindow(self.paciente_seleccionado)
             self.historia_clinica_window.show()
             self.close()
+
+    def abrir_inicio(self):
+        from gui.seleccionar_registrar_paciente import SeleccionarRegistrarPacienteWindow
+        self.ventana_inicio = SeleccionarRegistrarPacienteWindow()
+        self.ventana_inicio.show()
+        self.close()
 
     def abrir_ventana_atencion_concentracion(self):
         if hasattr(self, 'paciente_seleccionado'):

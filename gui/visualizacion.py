@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
@@ -17,11 +17,12 @@ class VisualizacionWindow(QMainWindow):
 
         # Configuración de la ventana principal
         self.setWindowTitle("Visualización Capacidad Intelectual")
-        self.setGeometry(0, 0, 1280, 800)  # Tamaño manejable y seguro
+        self.setStyleSheet("background-color: #005BBB;")  # Fondo azul
 
         # Crear widget principal y layout
         main_widget = QWidget(self)
         main_layout = QVBoxLayout(main_widget)
+        main_widget.setStyleSheet("background-color: #005BBB;")  # Fondo azul
         self.setCentralWidget(main_widget)
 
         # Mostrar logo y título
@@ -31,17 +32,26 @@ class VisualizacionWindow(QMainWindow):
         self.add_graph(main_layout)
         self.add_graph_compuesto(main_layout)
 
+        # Mostrar la ventana maximizada
+        self.showMaximized()
+
     def add_header(self, layout):
-        # Añadir logo y título
+        # Crear un layout horizontal para el header
+        header_layout = QHBoxLayout()
+
+        # Añadir logo
         logo_label = QLabel(self)
         logo_pixmap = QPixmap('gui/src/upb.png').scaled(100, 100, Qt.KeepAspectRatio)
         logo_label.setPixmap(logo_pixmap)
-        layout.addWidget(logo_label, alignment=Qt.AlignCenter)
+        header_layout.addWidget(logo_label, alignment=Qt.AlignLeft)
 
+        # Añadir título
         title_label = QLabel("Capacidad Intelectual", self)
         title_label.setFont(QFont('Arial', 24))
-        layout.addWidget(title_label, alignment=Qt.AlignCenter)
-                # Botón "Volver" en la esquina derecha
+        title_label.setStyleSheet("color: white;")  # Texto blanco
+        header_layout.addWidget(title_label, alignment=Qt.AlignCenter)
+
+        # Añadir botón "Volver"
         self.boton_volver = QPushButton("VOLVER")
         self.boton_volver.setStyleSheet("""
             QPushButton {
@@ -57,8 +67,10 @@ class VisualizacionWindow(QMainWindow):
             }
         """)
         self.boton_volver.clicked.connect(self.abrir_ventana_anterior)
-        layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
-        
+        header_layout.addWidget(self.boton_volver, alignment=Qt.AlignRight)
+
+        # Añadir el header layout al layout principal
+        layout.addLayout(header_layout)
 
     def add_graph(self, layout):
         # Cambiar el tamaño de la figura
@@ -194,8 +206,6 @@ class VisualizacionWindow(QMainWindow):
             print(f"Error en la solicitud: {response.status_code}")
             return {}
 
-
-
     def obtener_id_prueba(self, nombre_prueba):
         # Obtener el ID de la prueba desde el backend
         url = 'http://localhost:5000/pruebas'
@@ -286,7 +296,6 @@ class VisualizacionWindow(QMainWindow):
 
         return categorias
 
-
     def crear_grafico_compuesto(self, conversiones):
         # Extraer las categorías y puntuaciones compuestas
         categories = ["ICV", "IRP", "IMT", "IVP", "CIT"]
@@ -338,10 +347,12 @@ class VisualizacionWindow(QMainWindow):
         if hasattr(self, 'paciente_seleccionado'):
             from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
             self.ventana_anterior = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
+            self.ventana_anterior.show()
             self.close()
+
 if __name__ == "__main__":
     app = QApplication([])
     paciente = {'codigo_hc': 1, 'nombre': 'Camilo Velasquez'}
     window = VisualizacionWindow(paciente)
-    window.show()
+    window.showMaximized()
     app.exec_()

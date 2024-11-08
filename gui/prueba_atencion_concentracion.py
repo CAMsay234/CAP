@@ -246,28 +246,29 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
             else:
                 print(f"Error al obtener las pruebas: {response.status_code}")
                 return
-    
+
             # Obtener todas las subpruebas para crear un mapeo basado en los nombres
             response = requests.get('http://localhost:5000/subpruebas')
             if response.status_code == 200:
                 subpruebas = response.json()
                 # Crear un mapeo de nombre de subprueba a ID
                 subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
+                print(f"Mapa de subpruebas: {subpruebas_map}")
             else:
                 print(f"Error al obtener las subpruebas: {response.status_code}")
                 subpruebas_map = {}
-    
+
             # Obtener las evaluaciones del paciente para esta prueba
             url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
             response = requests.get(url)
             if response.status_code == 200:
                 evaluaciones = response.json()
                 print(f"Evaluaciones obtenidas: {evaluaciones}")
-    
+
                 # Llenar los campos de la tabla con los datos correspondientes
                 for evaluacion in evaluaciones:
                     subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
-    
+
                     # Asignar datos a las subpruebas normales
                     for row in range(1, self.table_layout.rowCount()):
                         widget = self.table_layout.itemAtPosition(row, 0).widget()
@@ -279,16 +280,8 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                                 self.table_layout.itemAtPosition(row, 3).widget().setText(str(evaluacion['desviacion_estandar']))
                                 self.table_layout.itemAtPosition(row, 4).widget().setText(evaluacion['interpretacion'])
                                 break
-    
-                    if subprueba_nombre == "Otra Prueba":
-                        otra_prueba_widget = self.table_layout.itemAtPosition(8, 0).widget()
-                        otra_prueba_widget.setText("Otra Prueba")
-                        self.table_layout.itemAtPosition(8, 1).widget().setText(str(evaluacion['puntaje']))
-                        self.table_layout.itemAtPosition(8, 2).widget().setText(str(evaluacion['media']))
-                        self.table_layout.itemAtPosition(8, 3).widget().setText(str(evaluacion['desviacion_estandar']))
-                        self.table_layout.itemAtPosition(8, 4).widget().setText(evaluacion['interpretacion'])
-    
-                # Procesar subpruebas específicas
+
+                # Procesar subpruebas específicas para las secciones adicionales
                 subpruebas_especificas = ["Aciertos 48/", "Errores", "Tiempo", "Tiempo", "Curva de Memoria. Span"]
                 for i, subprueba_nombre in enumerate(subpruebas_especificas, start=10):
                     for evaluacion in evaluaciones:
@@ -302,27 +295,27 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                             if self.table_layout.itemAtPosition(i, 4) is not None:
                                 self.table_layout.itemAtPosition(i, 4).widget().setText(evaluacion['interpretacion'])
                             break
-    
+
                 print("Datos cargados exitosamente.")
             elif response.status_code == 404:
                 print("No se encontraron evaluaciones para este paciente.")
             else:
                 print(f"Error al obtener las evaluaciones: {response.status_code}")
-    
+
             # Obtener los comentarios del paciente para esta prueba
             url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/"
             response = requests.get(url)
             if response.status_code == 200:
                 comentarios = response.json()
                 print(f"Comentarios obtenidos: {comentarios}")
-    
+
                 # Llenar los campos de comentarios con los datos obtenidos
                 for i, comentario in enumerate(comentarios):
                     if i < self.comment_layout.rowCount():
                         self.comment_layout.itemAtPosition(i, 1).widget().setPlainText(comentario['comentario'])
             else:
                 print(f"Error al obtener los comentarios: {response.status_code}")
-    
+
         except requests.exceptions.RequestException as e:
             print(f"Error de conexión: {str(e)}")
 

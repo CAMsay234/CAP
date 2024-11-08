@@ -14,12 +14,17 @@ def crear_nueva_hipotesis():
     if not descripcion:
         return jsonify({"error": "La descripción es obligatoria"}), 400
 
+    # Verificar si la hipótesis ya existe en la base de datos
+    hipotesis_existente = Hipotesis.query.filter_by(descripcion=descripcion).first()
+    if hipotesis_existente:
+        return jsonify({"message": "La hipótesis ya existe", "id": hipotesis_existente.id}), 200
+
     nueva_hipotesis = Hipotesis(descripcion=descripcion)
 
     try:
         db.session.add(nueva_hipotesis)
         db.session.commit()
-        return jsonify({"message": "Hipótesis creada exitosamente"}), 201
+        return jsonify({"message": "Hipótesis creada exitosamente", "id": nueva_hipotesis.id}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
@@ -75,4 +80,3 @@ def eliminar_hipotesis(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-

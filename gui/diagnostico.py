@@ -3,7 +3,7 @@ import os
 import requests
 from datetime import datetime
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QTextEdit, QWidget, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QMessageBox
+    QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QTextEdit, QWidget, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QMessageBox
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -95,16 +95,29 @@ class DiagnosticoWindow(QMainWindow):
         """)
         left_layout.addWidget(self.hipotesis_button)
 
-        # ComboBox para seleccionar hipótesis
-        self.combo_hipotesis = QComboBox()
-        self.combo_hipotesis.setStyleSheet("padding: 5px; border: 1px solid black;")
-        left_layout.addWidget(self.combo_hipotesis)
+        # Campo de texto para ingresar hipótesis
+        hipotesis_layout = QHBoxLayout()
+        self.hipotesis_input = QLineEdit()
+        self.hipotesis_input.setPlaceholderText("Ingrese la hipótesis")
+        self.hipotesis_input.setStyleSheet("padding: 5px; border: 1px solid black;")
+        self.hipotesis_input.returnPressed.connect(self.agregar_hipotesis_seleccionada)  # Conectar Enter para agregar hipótesis
+        hipotesis_layout.addWidget(self.hipotesis_input)
 
-        # Llamar a la función para cargar las hipótesis desde el backend
-        self.cargar_hipotesis()
+        # Botón "+" para agregar hipótesis
+        self.boton_agregar_hipotesis = QPushButton("+")
+        self.boton_agregar_hipotesis.setStyleSheet("""
+            QPushButton {
+                background-color: #8AA4F7;
+                color: white;
+                padding: 5px;
+                font-size: 14px;
+                border-radius: 5px;
+            }
+        """)
+        self.boton_agregar_hipotesis.clicked.connect(self.agregar_hipotesis_seleccionada)
+        hipotesis_layout.addWidget(self.boton_agregar_hipotesis)
 
-        # Conectar la selección del combo al método de agregar hipótesis seleccionada
-        self.combo_hipotesis.currentIndexChanged.connect(self.agregar_hipotesis_seleccionada)
+        left_layout.addLayout(hipotesis_layout)
 
         # Lista para mostrar las hipótesis seleccionadas
         self.lista_hipotesis = QListWidget()
@@ -195,22 +208,6 @@ class DiagnosticoWindow(QMainWindow):
         # Cargar diagnóstico del paciente si existe
         self.cargar_diagnostico_paciente()
 
-    def cargar_hipotesis(self):
-        """Función para cargar las hipótesis desde la base de datos usando una petición GET."""
-        try:
-            response = requests.get('http://127.0.0.1:5000/hipotesis')  # Cambia esta URL si es necesario
-            if response.status_code == 200:
-                hipotesis = response.json()  # Obtener la lista de hipótesis
-                self.combo_hipotesis.clear()  # Limpiar el ComboBox antes de añadir nuevas opciones
-                self.combo_hipotesis.addItem("Seleccione una hipótesis")  # Añadir un elemento por defecto
-                self.hipotesis_map = {h['descripcion']: h['id'] for h in hipotesis}  # Mapear descripciones a IDs
-                for h in hipotesis:
-                    self.combo_hipotesis.addItem(h['descripcion'])  # Añadir cada hipótesis al ComboBox
-            else:
-                print(f"Error al obtener las hipótesis: {response.status_code}")
-        except Exception as e:
-            print(f"Error de conexión: {str(e)}")
-
     def cargar_diagnostico_paciente(self):
         """Función para cargar el diagnóstico del paciente si existe."""
         try:
@@ -231,12 +228,31 @@ class DiagnosticoWindow(QMainWindow):
             print(f"Error de conexión: {str(e)}")
 
     def agregar_hipotesis_seleccionada(self):
-        """Función para agregar la hipótesis seleccionada al recuadro."""
-        hipotesis_seleccionada = self.combo_hipotesis.currentText()
-        if hipotesis_seleccionada != "Seleccione una hipótesis" and hipotesis_seleccionada not in [self.lista_hipotesis.item(i).text() for i in range(self.lista_hipotesis.count())]:
-            # Agregar la hipótesis seleccionada al recuadro
-            item = QListWidgetItem(hipotesis_seleccionada)  # Crear un nuevo ítem
-            self.lista_hipotesis.addItem(item)  # Añadir el ítem a la lista
+        """Función para agregar la hipótesis ingresada al recuadro."""
+        hipotesis_seleccionada = self.hipotesis_input.text().strip()
+        if hipotesis_seleccionada and hipotesis_seleccionada not in [self.lista_hipotesis.item(i).text() for i in range(self.lista_hipotesis.count())]:
+            # Verificar si la hipótesis ya existe en la base de datos
+            response = requests.get(f'http://127.0.0.1:5000/hipotesis')
+            if response.status_code == 200:
+                hipotesis_list = response.json()
+                hipotesis_existente = next((h for h in hipotesis_list if h['descripcion'] == hipotesis_seleccionada), None)
+                if hipotesis_existente:
+                    hipotesis_id = hipotesis_existente['id']
+                else:
+                    # Crear una nueva hipótesis si no existe
+                    response = requests.post('http://127.0.0.1:5000/hipotesis', json={"descripcion": hipotesis_seleccionada})
+                    if response.status_code == 201:
+                        hipotesis_id = response.json()['id']
+                    else:
+                        QMessageBox.critical(self, "Error", f"Error al crear la hipótesis: {response.status_code}")
+                        return
+                # Agregar la hipótesis ingresada al recuadro
+                item = QListWidgetItem(hipotesis_seleccionada)  # Crear un nuevo ítem
+                self.lista_hipotesis.addItem(item)  # Añadir el ítem a la lista
+                self.hipotesis_map[hipotesis_seleccionada] = hipotesis_id  # Mapear la descripción al ID
+                self.hipotesis_input.clear()  # Limpiar el campo de texto
+            else:
+                QMessageBox.critical(self, "Error", f"Error al obtener las hipótesis: {response.status_code}")
 
     def eliminar_hipotesis_seleccionada(self, item):
         """Función para eliminar una hipótesis seleccionada al hacer clic en ella."""
