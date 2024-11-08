@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit, QMessageBox
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -87,15 +87,13 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
         self.boton_guardar.clicked.connect(self.guardar_todo)  # Conectar el botón para guardar
         header_background_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
 
-        # Tabla de pruebas para "Escala de Memoria de Wechsler"
-        self.add_table("ESCALA DE MEMORIA DE WECHSLER", ["Información", "Orientación", "Control mental", "Memoria lógica"], main_layout)
+        # Inicializar las tablas
+        self.add_table("ESCALA DE MEMORIA DE WECHSLER", ["Información", "Orientación", "Control mental", "Memoria lógica"], main_layout, 'table_layout_escala_memoria')
+        self.add_table("CURVA DE MEMORIA VERBAL", ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos"], main_layout, 'table_layout_curva_memoria_verbal')
+        self.add_table("CURVA DE MEMORIA VISUAL", ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos", "Figura rey evocación", "Otra prueba"], main_layout, 'table_layout_curva_memoria_visual')
 
-        # Tabla de pruebas para "Curva de Memoria Verbal"
-        self.add_table("CURVA DE MEMORIA VERBAL", ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos"], main_layout)
-
-        # Tabla de pruebas para "Curva de Memoria Visual"
-        self.add_table("CURVA DE MEMORIA VISUAL", ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos", "Figura rey evocación", "Otra prueba"], main_layout)
-
+        # Cargar datos de subpruebas
+        self.cargar_datos_subpruebas()
         # Sección de comentarios clínicos con celdas para cada comentario
         comentarios_clinicos = [
             "Curva de aprendizaje de información verbal", "Curva de aprendizaje no verbal",
@@ -119,16 +117,14 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
         self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
         self.close()  # Cerrar la ventana actual
 
-
-
-    def add_table(self, title, tests, layout):
+    def add_table(self, title, tests, layout, table_layout_attr):
         """Función para agregar una tabla con los datos de las pruebas."""
         title_label = QLabel(title)
         title_label.setFont(QFont('Arial', 16, QFont.Bold))
         title_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
         layout.addWidget(title_label)
 
-        self.table_layout = QGridLayout()  # Inicializar self.table_layout
+        table_layout = QGridLayout()  # Inicializar table_layout
         headers = ["PRUEBAS", "PUNTAJE", "MEDIA", "DS", "INTERPRETACIÓN"]
 
         # Agregar encabezados a la tabla
@@ -137,7 +133,7 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
             header_label.setFont(QFont('Arial', 14, QFont.Bold))
             header_label.setStyleSheet("color: white; background-color: #4A90E2; padding: 10px; border-radius: 5px;")
             header_label.setAlignment(Qt.AlignCenter)
-            self.table_layout.addWidget(header_label, 0, col)
+            table_layout.addWidget(header_label, 0, col)
 
         # Agregar filas de pruebas
         for row, test in enumerate(tests, start=1):
@@ -147,7 +143,7 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
                 test_label.setPlaceholderText("Ingrese el nombre de la prueba")
                 test_label.setAlignment(Qt.AlignCenter)
                 test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
-                self.table_layout.addWidget(test_label, row, 0)
+                table_layout.addWidget(test_label, row, 0)
             else:
                 # Nombre de la prueba
                 test_label = QLabel(test)
@@ -155,16 +151,18 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
                 test_label.setFixedWidth(400)
                 test_label.setAlignment(Qt.AlignCenter)
                 test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
-                self.table_layout.addWidget(test_label, row, 0)
+                table_layout.addWidget(test_label, row, 0)
 
             # Campos de entrada para Puntaje, Media, DS, Interpretación
             for col in range(1, 5):
                 input_field = QLineEdit()
                 input_field.setFixedHeight(35)
                 input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde
-                self.table_layout.addWidget(input_field, row, col)
+                table_layout.addWidget(input_field, row, col)
 
-        layout.addLayout(self.table_layout)
+        layout.addLayout(table_layout)
+        setattr(self, table_layout_attr, table_layout)
+
 
     def add_comment_section(self, title, comments, layout):
         """Añadir sección de comentarios clínicos con múltiples líneas"""
@@ -206,25 +204,11 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
         layout.addWidget(self.conclusion_text_edit)
 
     def guardar_prueba(self):
-        def procesar_subprueba(row):
-            widget = self.table_layout.itemAtPosition(row, 0).widget()
-            if isinstance(widget, QLineEdit):
-                subprueba_nombre = widget.text().strip()
-            else:
-                subprueba_nombre = widget.text().strip()
-            
-            # Concatenar el título correspondiente a cada subprueba
-            if row <= 4:
-                subprueba_nombre = f"{titulos[0]} - {subprueba_nombre}"
-            elif 5 <= row <= 8:
-                subprueba_nombre = f"{titulos[1]} - {subprueba_nombre}"
-            elif 9 <= row <= 13:
-                subprueba_nombre = f"{titulos[2]} - {subprueba_nombre}"
-            
-            puntaje_widget = self.table_layout.itemAtPosition(row, 1)
-            media_widget = self.table_layout.itemAtPosition(row, 2)
-            ds_widget = self.table_layout.itemAtPosition(row, 3)
-            interpretacion_widget = self.table_layout.itemAtPosition(row, 4)
+        def procesar_subprueba(row, prueba_id, subprueba_nombre, table_layout):
+            puntaje_widget = table_layout.itemAtPosition(row, 1)
+            media_widget = table_layout.itemAtPosition(row, 2)
+            ds_widget = table_layout.itemAtPosition(row, 3)
+            interpretacion_widget = table_layout.itemAtPosition(row, 4)
             
             puntaje = puntaje_widget.widget().text().strip() if puntaje_widget and puntaje_widget.widget() else None
             media = media_widget.widget().text().strip() if media_widget and media_widget.widget() else ""
@@ -301,39 +285,112 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
                     print(f"Error al actualizar los resultados para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
             else:
                 print(f"Error al verificar la evaluación para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
-
-        # Obtener el nombre de la prueba desde el título de la ventana
-        prueba_nombre = self.windowTitle().replace("Prueba ", "")
-        
-        # Obtener el ID de la prueba desde la API
+    
+        def guardar_tabla(titulo, subpruebas, prueba_id, table_layout):
+            # Procesar cada subprueba de manera secuencial
+            for row, subprueba_nombre in enumerate(subpruebas, start=1):
+                procesar_subprueba(row, prueba_id, f"{titulo} - {subprueba_nombre}", table_layout)
+    
+        # Obtener el ID de la prueba general "Proceso de Memoria" desde la API
         response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas")
             return
         
         pruebas = response.json()
-        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "procesos de memoria"), None)
         if prueba_id is None:
-            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
+            print(f"Prueba 'Procesos de memoria' no encontrada en la base de datos.")
+            return
+    
+        # Guardar las subpruebas de cada tabla
+        guardar_tabla(
+            "ESCALA DE MEMORIA DE WECHSLER",
+            ["Información", "Orientación", "Control mental", "Memoria lógica"],
+            prueba_id,
+            self.table_layout_escala_memoria
+        )
+        guardar_tabla(
+            "CURVA DE MEMORIA VERBAL",
+            ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos"],
+            prueba_id,
+            self.table_layout_curva_memoria_verbal
+        )
+        guardar_tabla(
+            "CURVA DE MEMORIA VISUAL",
+            ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos", "Figura rey evocación", "Otra prueba"],
+            prueba_id,
+            self.table_layout_curva_memoria_visual
+        )
+
+    def cargar_datos_subpruebas(self):
+        def cargar_tabla(titulo, subpruebas, prueba_id, table_layout):
+            for row, subprueba_nombre in enumerate(subpruebas, start=1):
+                subprueba_nombre_completo = f"{titulo} - {subprueba_nombre}".lower()
+                subprueba_id = subpruebas_dict.get(subprueba_nombre_completo)
+                if subprueba_id:
+                    # Obtener los datos de la evaluación para la subprueba
+                    response = requests.get(f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}")
+                    if response.status_code == 200:
+                        evaluacion = response.json()
+                        # Ubicar los datos en los espacios correspondientes
+                        table_layout.itemAtPosition(row, 1).widget().setText(evaluacion.get('puntaje', ''))
+                        table_layout.itemAtPosition(row, 2).widget().setText(evaluacion.get('media', ''))
+                        table_layout.itemAtPosition(row, 3).widget().setText(evaluacion.get('desviacion_estandar', ''))
+                        table_layout.itemAtPosition(row, 4).widget().setText(evaluacion.get('interpretacion', ''))
+                    else:
+                        # Si no hay datos, dejar los espacios en blanco
+                        table_layout.itemAtPosition(row, 1).widget().setText('')
+                        table_layout.itemAtPosition(row, 2).widget().setText('')
+                        table_layout.itemAtPosition(row, 3).widget().setText('')
+                        table_layout.itemAtPosition(row, 4).widget().setText('')
+                else:
+                    # Si no hay subprueba, dejar los espacios en blanco
+                    table_layout.itemAtPosition(row, 1).widget().setText('')
+                    table_layout.itemAtPosition(row, 2).widget().setText('')
+                    table_layout.itemAtPosition(row, 3).widget().setText('')
+                    table_layout.itemAtPosition(row, 4).widget().setText('')
+    
+        # Obtener el ID de la prueba general "Proceso de Memoria" desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
             return
         
-        # Definir los títulos correspondientes a cada grupo de subpruebas
-        titulos = [
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "procesos de memoria"), None)
+        if prueba_id is None:
+            print(f"Prueba 'Procesos de memoria' no encontrada en la base de datos.")
+            return
+    
+        # Obtener todas las subpruebas asociadas a la prueba "Proceso de Memoria"
+        response = requests.get('http://localhost:5000/subpruebas')
+        if response.status_code != 200:
+            print("Error al obtener las subpruebas")
+            return
+        
+        subpruebas = response.json()
+        subpruebas_dict = {sp['nombre'].lower(): sp['id'] for sp in subpruebas if sp['id_prueba'] == prueba_id}
+    
+        # Cargar los datos de cada tabla
+        cargar_tabla(
             "ESCALA DE MEMORIA DE WECHSLER",
+            ["Información", "Orientación", "Control mental", "Memoria lógica"],
+            prueba_id,
+            self.table_layout_escala_memoria
+        )
+        cargar_tabla(
             "CURVA DE MEMORIA VERBAL",
-            "CURVA DE MEMORIA VISUAL"
-        ]
-        
-        # Crear y empezar hilos para cada subprueba
-        threads = []
-        for row in range(1, self.table_layout.rowCount()):  # Excluir la fila "Total"
-            thread = threading.Thread(target=procesar_subprueba, args=(row,))
-            threads.append(thread)
-            thread.start()
-        
-        # Esperar a que todos los hilos terminen
-        for thread in threads:
-            thread.join()
+            ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos"],
+            prueba_id,
+            self.table_layout_curva_memoria_verbal
+        )
+        cargar_tabla(
+            "CURVA DE MEMORIA VISUAL",
+            ["Volumen inicial", "Puntaje máximo", "Evocación diferida 20'", "Número de ensayos", "Figura rey evocación", "Otra prueba"],
+            prueba_id,
+            self.table_layout_curva_memoria_visual
+        )
 
     def guardar_comentarios(self):
         def procesar_comentario(i):
@@ -409,10 +466,28 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
 
         print("Conclusión guardada exitosamente")
     
+    def mostrar_mensaje(self, titulo, mensaje, icono=QMessageBox.Information):
+            """Función para mostrar un mensaje al usuario."""
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle(titulo)
+            msg_box.setText(mensaje)
+            msg_box.setIcon(icono)
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.exec_()
+ 
     def guardar_todo(self):
-        self.guardar_prueba()
-        self.guardar_comentarios()
-        self.guardar_conclusion()
+        """Función para guardar todas las evaluaciones, comentarios y conclusiones."""
+        try:
+            # Intentar guardar todas las secciones
+            self.guardar_prueba()
+            self.guardar_comentarios()
+            self.guardar_conclusion()
+ 
+            # Mostrar mensaje de éxito si todo se guardó correctamente
+            self.mostrar_mensaje("Éxito", "Datos guardados correctamente", QMessageBox.Information)
+        except Exception as e:
+            # Mostrar mensaje de error si hubo algún problema
+            self.mostrar_mensaje("Error", f"Ocurrió un error al guardar los datos: {str(e)}", QMessageBox.Critical)
         
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
