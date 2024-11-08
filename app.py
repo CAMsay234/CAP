@@ -48,7 +48,7 @@ def aplicar_seguridad(response):
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db.session.remove()
-
+    
 if __name__ == "__main__":
     # Crear las tablas e índices necesarios en la base de datos
     create_tables_and_indices()
