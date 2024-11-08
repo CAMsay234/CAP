@@ -1,34 +1,32 @@
 import sys
-import threading
-import requests  # Importar el módulo requests
-import os
+from multiprocessing import Process
 from PyQt5.QtWidgets import QApplication
-from app import create_app, stop_event
+from app import create_app
 from gui.main_window import LoginWindow
 
 def run_flask():
     app = create_app()
-    app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
+    app.run(host='127.0.0.1', port=5000, debug=True, use_reloader=False)  # Ejecuta Flask sin intentar apagarlo con shutdown
 
-def stop_flask_server():
-    stop_event.set()
-    # Realizar una solicitud al servidor para activar el cierre
-    try:
-        requests.post('http://127.0.0.1:5000/shutdown')
-        sys.exit(0)
-    except requests.exceptions.RequestException:
-        pass
-
-if __name__ == "__main__":
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.start()
-
+def run_pyqt():
     app = QApplication(sys.argv)
-    main_window = LoginWindow()
-    main_window.showFullScreen()
-    
+    ventana = LoginWindow()
+    ventana.showFullScreen()  # Mostrar la ventana en pantalla completa
     app.exec_()
 
-    stop_flask_server()
-    flask_thread.join()
-    sys.exit(0)  # Salir del script
+if __name__ == "__main__":
+    # Crear procesos para Flask y PyQt
+    flask_process = Process(target=run_flask)
+    pyqt_process = Process(target=run_pyqt)
+
+    # Iniciar ambos procesos
+    flask_process.start()
+    pyqt_process.start()
+
+    try:
+        pyqt_process.join()  # Mantener PyQt en ejecución hasta que se cierre la ventana
+    except KeyboardInterrupt:
+        print("Cerrando aplicación...")
+    finally:
+        flask_process.terminate()  # Forzar la terminación de Flask
+        flask_process.join()  # Asegurarse de que Flask ha terminado antes de salir
