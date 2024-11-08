@@ -2,7 +2,7 @@ import sys
 import os
 import requests
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QTextEdit, QPushButton
+    QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QTextEdit, QPushButton, QMessageBox
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -90,6 +90,8 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         self.boton_guardar.clicked.connect(self.guardar_todo)  # Conectar el botón para guardar
         header_background_layout.addWidget(self.boton_guardar, alignment=Qt.AlignRight)
 
+        self.section_inputs = {}  # Inicializar el diccionario para todas las subpruebas y secciones
+
         # Tabla de pruebas
         self.table_layout = QGridLayout()
         headers = ["PRUEBAS", "PUNTAJE", "MEDIA", "DS", "INTERPRETACIÓN"]
@@ -116,6 +118,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
                 test_label.setMinimumWidth(500)
                 self.table_layout.addWidget(test_label, row, 0)
+                input_fields = [test_label]  # Incluir el campo de nombre para "Otra Prueba"
             else:
                 # Nombre de la prueba
                 test_label = QLabel(test)
@@ -124,6 +127,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
                 test_label.setMinimumWidth(500)
                 self.table_layout.addWidget(test_label, row, 0)
+                input_fields = []  # Lista para almacenar los campos de entrada de cada prueba
 
             # Campos de entrada para Puntaje, Media, DS, Interpretación
             for col in range(1, 5):
@@ -131,14 +135,18 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 input_field.setStyleSheet("border: 1px solid black;")
                 input_field.setFixedHeight(35)
                 self.table_layout.addWidget(input_field, row, col)
+                input_fields.append(input_field)
+
+            # Agregar las referencias de los campos de entrada al diccionario section_inputs usando el nombre de la prueba
+            self.section_inputs[test] = input_fields
 
         main_layout.addLayout(self.table_layout)
 
         # Sección de "Tachado de Cuadros"
-        self.add_section("TACHADO DE CUADROS", ["Aciertos 48/", "Errores", "Tiempo"], main_layout)
+        self.add_section("TACHADO DE CUADROS", ["Aciertos 48/", "Errores", "Tiempo Tachado de cuadros"], main_layout)
 
         # Sección de "Test de Rastreo de Caminos A."
-        self.add_section("TEST DE RASTREOS DE CAMINOS A.", ["Tiempo", "Curva de Memoria. Span"], main_layout)
+        self.add_section("TEST DE RASTREOS DE CAMINOS A.", ["Tiempo Test de rastreo", "Curva de Memoria. Span"], main_layout)
 
         # Sección de comentarios clínicos
         comentarios_clinicos = [
@@ -160,6 +168,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
 
         # Llamar a la función para cargar los datos del paciente
         self.cargar_datos_paciente()
+
             
     def add_section(self, title, fields, layout):
         """Añadir secciones con campos de entrada de texto y almacenar sus referencias."""
@@ -253,7 +262,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 subpruebas = response.json()
                 # Crear un mapeo de nombre de subprueba a ID
                 subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
-                print(f"Mapa de subpruebas: {subpruebas_map}")
+                print("Contenido de subpruebas_map:", subpruebas_map)
             else:
                 print(f"Error al obtener las subpruebas: {response.status_code}")
                 subpruebas_map = {}
@@ -265,36 +274,35 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                 evaluaciones = response.json()
                 print(f"Evaluaciones obtenidas: {evaluaciones}")
 
-                # Llenar los campos de la tabla con los datos correspondientes
+                # Llenar los campos de la tabla de subpruebas con los datos correspondientes
                 for evaluacion in evaluaciones:
                     subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
 
                     # Asignar datos a las subpruebas normales
-                    for row in range(1, self.table_layout.rowCount()):
-                        widget = self.table_layout.itemAtPosition(row, 0).widget()
-                        if isinstance(widget, QLabel):
-                            nombre_subprueba = widget.text().strip()
-                            if nombre_subprueba == subprueba_nombre:
-                                self.table_layout.itemAtPosition(row, 1).widget().setText(str(evaluacion['puntaje']))
-                                self.table_layout.itemAtPosition(row, 2).widget().setText(str(evaluacion['media']))
-                                self.table_layout.itemAtPosition(row, 3).widget().setText(str(evaluacion['desviacion_estandar']))
-                                self.table_layout.itemAtPosition(row, 4).widget().setText(evaluacion['interpretacion'])
-                                break
+                    if subprueba_nombre in self.section_inputs:
+                        input_fields = self.section_inputs[subprueba_nombre]
+                        if input_fields:
+                            input_fields[0].setText(str(evaluacion['puntaje']))
+                            input_fields[1].setText(str(evaluacion['media']))
+                            input_fields[2].setText(str(evaluacion['desviacion_estandar']))
+                            input_fields[3].setText(evaluacion['interpretacion'])
 
-                # Procesar subpruebas específicas para las secciones adicionales
-                subpruebas_especificas = ["Aciertos 48/", "Errores", "Tiempo", "Tiempo", "Curva de Memoria. Span"]
-                for i, subprueba_nombre in enumerate(subpruebas_especificas, start=10):
-                    for evaluacion in evaluaciones:
-                        if subpruebas_map.get(subprueba_nombre) == evaluacion['id_subprueba']:
-                            if self.table_layout.itemAtPosition(i, 1) is not None:
-                                self.table_layout.itemAtPosition(i, 1).widget().setText(str(evaluacion['puntaje']))
-                            if self.table_layout.itemAtPosition(i, 2) is not None:
-                                self.table_layout.itemAtPosition(i, 2).widget().setText(str(evaluacion['media']))
-                            if self.table_layout.itemAtPosition(i, 3) is not None:
-                                self.table_layout.itemAtPosition(i, 3).widget().setText(str(evaluacion['desviacion_estandar']))
-                            if self.table_layout.itemAtPosition(i, 4) is not None:
-                                self.table_layout.itemAtPosition(i, 4).widget().setText(evaluacion['interpretacion'])
-                            break
+                # Cargar los datos específicos de las secciones adicionales
+                secciones_adicionales = ["Aciertos 48/", "Errores", "Tiempo Tachado de cuadros", "Tiempo Test de rastreo", "Curva de Memoria verbal. Spán"]
+                for seccion in secciones_adicionales:
+                    if seccion in self.section_inputs:
+                        # Buscar la evaluación correspondiente a la sección
+                        evaluacion_seccion = next((e for e in evaluaciones if subpruebas_map.get(seccion) == e['id_subprueba']), None)
+                        if evaluacion_seccion:
+                            # Llenar los campos de entrada de la sección con los valores obtenidos
+                            input_fields = self.section_inputs[seccion]
+                            print(f"Cargando datos para la sección: {seccion}")
+                            input_fields[0].setText(str(evaluacion_seccion['puntaje']))
+                            input_fields[1].setText(str(evaluacion_seccion['media']))
+                            input_fields[2].setText(str(evaluacion_seccion['desviacion_estandar']))
+                            input_fields[3].setText(evaluacion_seccion['interpretacion'])
+                        else:
+                            print(f"No se encontró evaluación para la sección: {seccion}")
 
                 print("Datos cargados exitosamente.")
             elif response.status_code == 404:
@@ -569,12 +577,30 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         except requests.exceptions.RequestException as e:
             print(f"Error al guardar la conclusión: {e}")
 
+    def mostrar_mensaje(self, titulo, mensaje, icono=QMessageBox.Information):
+        """Función para mostrar un mensaje al usuario."""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(titulo)
+        msg_box.setText(mensaje)
+        msg_box.setIcon(icono)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()
+
     def guardar_todo(self):
         """Función para guardar todas las evaluaciones, comentarios y conclusiones."""
-        self.guardar_prueba()  # Guardar las subpruebas normales
-        self.guardar_secciones()  # Guardar las secciones adicionales
-        self.guardar_comentarios()  # Guardar los comentarios
-        self.guardar_conclusion()  # Guardar la conclusión
+        try:
+            # Intentar guardar todas las secciones
+            self.guardar_prueba()
+            self.guardar_secciones()
+            self.guardar_comentarios()
+            self.guardar_conclusion()
+
+            # Mostrar mensaje de éxito si todo se guardó correctamente
+            self.mostrar_mensaje("Éxito", "Datos guardados correctamente", QMessageBox.Information)
+        except Exception as e:
+            # Mostrar mensaje de error si hubo algún problema
+            self.mostrar_mensaje("Error", f"Ocurrió un error al guardar los datos: {str(e)}", QMessageBox.Critical)
+
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":

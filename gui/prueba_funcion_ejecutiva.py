@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 import requests
+import threading
 
 class PruebaFuncionEjecutivaWindow(QMainWindow):
     def __init__(self, paciente_seleccionado):
@@ -286,6 +287,49 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
                     print(f"Error al actualizar los resultados para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
             else:
                 print(f"Error al verificar la evaluación para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
+    def guardar_comentarios(self):
+        def procesar_comentario(i):
+            comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()
+            comment_text = self.comment_layout.itemAtPosition(i, 1).widget().toPlainText()
+
+            # Guardar los comentarios en la base de datos
+            data = {
+                "codigo_hc": self.paciente_seleccionado['codigo_hc'],  # Usar el código del paciente seleccionado
+                "id_prueba": prueba_id,
+                "tipo_comentario": comment_label,
+                "comentario": comment_text
+            }
+            response = requests.post('http://localhost:5000/comentarios', json=data)
+            if response.status_code != 201:
+                print(f"Error al guardar el comentario '{comment_label}'")
+
+        # Obtener el nombre de la prueba desde el título de la ventana
+        prueba_nombre = self.windowTitle().replace("Prueba ", "")
+
+        # Obtener el ID de la prueba desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+        if prueba_id is None:
+            print("Prueba no encontrada en la base de datos.")
+            return
+
+        # Crear y empezar hilos para cada comentario
+        threads = []
+        for i in range(self.comment_layout.rowCount()):
+            thread = threading.Thread(target=procesar_comentario, args=(i,))
+            threads.append(thread)
+            thread.start()
+
+        # Esperar a que todos los hilos terminen
+        for thread in threads:
+            thread.join()
+
+        print("Comentarios guardados exitosamente")
 
     def guardar_conclusion(self):
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
@@ -333,6 +377,7 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
 
     def guardar_todo(self):
         self.guardar_prueba()
+        self.guardar_comentarios()
         self.guardar_conclusion()
 
 # Función para ejecutar la aplicación
