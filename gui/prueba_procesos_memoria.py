@@ -413,6 +413,7 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
         self.guardar_prueba()
         self.guardar_comentarios()
         self.guardar_conclusion()
+        
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
     app = QApplication(sys.argv)

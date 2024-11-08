@@ -3,6 +3,15 @@ QMainWindow {
     background-color: #005BBB;
 }
 
+/* Estilo del texto del título en la ventana principal */
+QMainWindow QLabel {
+    color: white;
+    font-family: Vogue;
+    font-size: 38px;
+    font-weight: bold;
+}
+
+
 /* Estilo para los campos de texto */
 QLineEdit {
     background-color: white;
