@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton, QMessageBox
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
@@ -32,8 +32,11 @@ class VisualizacionWindow(QMainWindow):
         self.add_graph(main_layout)
         self.add_graph_compuesto(main_layout)
 
-        # Mostrar la ventana maximizada
-        self.showMaximized()
+        # Establecer un tamaño mínimo para la ventana
+        self.setMinimumSize(800, 600)
+
+        # Mostrar la ventana
+        self.show()
 
     def add_header(self, layout):
         # Crear un layout horizontal para el header
@@ -74,12 +77,16 @@ class VisualizacionWindow(QMainWindow):
 
     def add_graph(self, layout):
         # Cambiar el tamaño de la figura
-        fig, ax = plt.subplots(figsize=(14, 7))  # Tamaño ajustado
+        fig, ax = plt.subplots(figsize=(10, 5))  # Tamaño ajustado
         canvas = FigureCanvas(fig)
         layout.addWidget(canvas)
 
         # Obtener subpruebas y escalares
         categorias = self.obtener_puntuaciones()
+
+        if not categorias:
+            self.mostrar_mensaje("Advertencia", "No hay datos disponibles para la prueba de capacidad intelectual.")
+            return
 
         # Definir colores para cada categoría
         colores_categoria = {
@@ -137,6 +144,10 @@ class VisualizacionWindow(QMainWindow):
     def add_graph_compuesto(self, layout):
         # Obtener datos de la tabla conversiones
         conversiones = self.obtener_conversiones()
+
+        if not conversiones:
+            self.mostrar_mensaje("Advertencia", "No hay datos disponibles para las conversiones.")
+            return
 
         # Clasificar las conversiones por categoría compuesta
         conversiones_clasificadas = self.clasificar_por_categoria_compuesta(conversiones)
@@ -244,7 +255,7 @@ class VisualizacionWindow(QMainWindow):
             "Comprensión Verbal": ([], []),
             "Razonamiento Perceptual": ([], []),
             "Memoria de Trabajo": ([], []),
-            "Velocidad de Procesamiento": ([], [])
+            "Velocidad de Procesamiento": ([], []),
         }
 
         for subprueba, escalar in zip(subpruebas, escalares):
@@ -350,9 +361,18 @@ class VisualizacionWindow(QMainWindow):
             self.ventana_anterior.show()
             self.close()
 
+    def mostrar_mensaje(self, titulo, mensaje, icono=QMessageBox.Information):
+        """Función para mostrar un mensaje al usuario."""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(titulo)
+        msg_box.setText(mensaje)
+        msg_box.setIcon(icono)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()
+
 if __name__ == "__main__":
     app = QApplication([])
     paciente = {'codigo_hc': 1, 'nombre': 'Camilo Velasquez'}
     window = VisualizacionWindow(paciente)
-    window.showMaximized()
+    window.show()
     app.exec_()

@@ -89,7 +89,7 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
 
         # Tabla de pruebas
         self.add_table("PRUEBAS", ["Stroop lectura", "Stroop color", "Stroop conflicto", "TMT B", "Errores", "Fluidez verbal fonológica", "Otra prueba"], main_layout)
-
+        
         # Sección de comentarios clínicos con celdas para cada comentario
         comentarios_clinicos = [
             "Planeación", "Conceptualización", "Flexibilidad cognitiva", "Impulsividad y autocontrol"]
@@ -97,7 +97,8 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
 
         # Sección de "Conclusiones Generales" con un solo cuadro grande
         self.add_conclusion_section("CONCLUSIONES GENERALES", main_layout)
-
+        self.cargar_datos_subpruebas()
+        self.cargar_datos_comentarios()
         # Configurar el scroll y añadir el widget principal
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
@@ -154,6 +155,62 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
 
         layout.addLayout(self.table_layout)
 
+    def cargar_datos_subpruebas(self):
+        def cargar_tabla(subpruebas, prueba_id, table_layout):
+            for row, subprueba_nombre in enumerate(subpruebas, start=1):
+                subprueba_nombre_completo = subprueba_nombre.lower()
+                subprueba_id = subpruebas_dict.get(subprueba_nombre_completo)
+                if subprueba_id:
+                    # Obtener los datos de la evaluación para la subprueba
+                    response = requests.get(f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}")
+                    if response.status_code == 200:
+                        evaluacion = response.json()
+                        # Ubicar los datos en los espacios correspondientes
+                        table_layout.itemAtPosition(row, 1).widget().setText(evaluacion.get('puntaje', ''))
+                        table_layout.itemAtPosition(row, 2).widget().setText(evaluacion.get('media', ''))
+                        table_layout.itemAtPosition(row, 3).widget().setText(evaluacion.get('desviacion_estandar', ''))
+                        table_layout.itemAtPosition(row, 4).widget().setText(evaluacion.get('interpretacion', ''))
+                    else:
+                        # Si no hay datos, dejar los espacios en blanco
+                        table_layout.itemAtPosition(row, 1).widget().setText('')
+                        table_layout.itemAtPosition(row, 2).widget().setText('')
+                        table_layout.itemAtPosition(row, 3).widget().setText('')
+                        table_layout.itemAtPosition(row, 4).widget().setText('')
+                else:
+                    # Si no hay subprueba, dejar los espacios en blanco
+                    table_layout.itemAtPosition(row, 1).widget().setText('')
+                    table_layout.itemAtPosition(row, 2).widget().setText('')
+                    table_layout.itemAtPosition(row, 3).widget().setText('')
+                    table_layout.itemAtPosition(row, 4).widget().setText('')
+
+        # Obtener el ID de la prueba general "Función Ejecutiva" desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+        
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "función ejecutiva"), None)
+        if prueba_id is None:
+            print(f"Prueba 'Función Ejecutiva' no encontrada en la base de datos.")
+            return
+
+        # Obtener todas las subpruebas asociadas a la prueba "Función Ejecutiva"
+        response = requests.get('http://localhost:5000/subpruebas')
+        if response.status_code != 200:
+            print("Error al obtener las subpruebas")
+            return
+        
+        subpruebas = response.json()
+        subpruebas_dict = {sp['nombre'].lower(): sp['id'] for sp in subpruebas if sp['id_prueba'] == prueba_id}
+
+        # Cargar los datos de la tabla
+        cargar_tabla(
+            ["Stroop lectura", "Stroop color", "Stroop conflicto", "TMT B", "Errores", "Fluidez verbal fonológica", "Otra prueba"],
+            prueba_id,
+            self.table_layout
+        )
+
     def add_comment_section(self, title, comments, layout):
             """Añadir sección de comentarios clínicos con múltiples líneas"""
             title_label = QLabel(title)
@@ -197,93 +254,39 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
         self.conclusion_text_edit.setFixedHeight(150)  # Ajustar altura fija
         layout.addWidget(self.conclusion_text_edit)
     
-    def cargar_datos_paciente(self):
-        """Función para cargar los datos de las evaluaciones del paciente."""
-        try:
-            # Obtener el ID de la prueba de atención y concentración
-            response = requests.get('http://localhost:5000/pruebas')
-            if response.status_code == 200:
-                pruebas = response.json()
-                self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "atención y concentración"), None)
-                if self.prueba_id is None:
-                    print("Prueba de atención y concentración no encontrada.")
-                    return
-            else:
-                print(f"Error al obtener las pruebas: {response.status_code}")
-                return
+    def cargar_datos_comentarios(self):
+        # Obtener el ID de la prueba general "Función Ejecutiva" desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+        
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "función ejecutiva"), None)
+        if prueba_id is None:
+            print(f"Prueba 'Función Ejecutiva' no encontrada en la base de datos.")
+            return
 
-            # Obtener todas las subpruebas para crear un mapeo basado en los nombres
-            response = requests.get('http://localhost:5000/subpruebas')
-            if response.status_code == 200:
-                subpruebas = response.json()
-                # Crear un mapeo de nombre de subprueba a ID
-                subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
-                print("Contenido de subpruebas_map:", subpruebas_map)
-            else:
-                print(f"Error al obtener las subpruebas: {response.status_code}")
-                subpruebas_map = {}
+        # Obtener todos los comentarios asociados a la prueba "Función Ejecutiva"
+        response = requests.get(f'http://localhost:5000/comentarios/{self.paciente_seleccionado["codigo_hc"]}/{prueba_id}')
+        if response.status_code != 200:
+            print("Error al obtener los comentarios")
+            return
+        
+        comentarios = response.json()
+        comentarios_dict = {c['tipo_comentario'].lower(): c['comentario'] for c in comentarios}
 
-            # Obtener las evaluaciones del paciente para esta prueba
-            url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                evaluaciones = response.json()
-                print(f"Evaluaciones obtenidas: {evaluaciones}")
+        # Cargar los datos de los comentarios clínicos
+        for row, comentario_tipo in enumerate([
+            "Planeación", "Conceptualización", "Flexibilidad cognitiva", "Impulsividad y autocontrol"
+        ]):
+            comentario_tipo_lower = comentario_tipo.lower()
+            comentario_texto = comentarios_dict.get(comentario_tipo_lower, "")
+            self.comment_layout.itemAtPosition(row, 1).widget().setPlainText(comentario_texto)
 
-                # Llenar los campos de la tabla de subpruebas con los datos correspondientes
-                for evaluacion in evaluaciones:
-                    subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
-
-                    # Asignar datos a las subpruebas normales
-                    if subprueba_nombre in self.section_inputs:
-                        input_fields = self.section_inputs[subprueba_nombre]
-                        if input_fields:
-                            input_fields[0].setText(str(evaluacion['puntaje']))
-                            input_fields[1].setText(str(evaluacion['media']))
-                            input_fields[2].setText(str(evaluacion['desviacion_estandar']))
-                            input_fields[3].setText(evaluacion['interpretacion'])
-
-                # Cargar los datos específicos de las secciones adicionales
-                secciones_adicionales = ["Aciertos 48/", "Errores Tachado de cuadros", "Tiempo Tachado de cuadros", "Tiempo Test de rastreo", "Curva de Memoria verbal. Spán"]
-                for seccion in secciones_adicionales:
-                    if seccion in self.section_inputs:
-                        # Buscar la evaluación correspondiente a la sección
-                        evaluacion_seccion = next((e for e in evaluaciones if subpruebas_map.get(seccion) == e['id_subprueba']), None)
-                        if evaluacion_seccion:
-                            # Llenar los campos de entrada de la sección con los valores obtenidos
-                            input_fields = self.section_inputs[seccion]
-                            print(f"Cargando datos para la sección: {seccion}")
-                            input_fields[0].setText(str(evaluacion_seccion['puntaje']))
-                            input_fields[1].setText(str(evaluacion_seccion['media']))
-                            input_fields[2].setText(str(evaluacion_seccion['desviacion_estandar']))
-                            input_fields[3].setText(evaluacion_seccion['interpretacion'])
-                        else:
-                            print(f"No se encontró evaluación para la sección: {seccion}")
-
-                print("Datos cargados exitosamente.")
-            elif response.status_code == 404:
-                print("No se encontraron evaluaciones para este paciente.")
-            else:
-                print(f"Error al obtener las evaluaciones: {response.status_code}")
-
-           # Obtener los comentarios del paciente para esta prueba
-            url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                comentarios = response.json()
-                print(f"Comentarios obtenidos: {comentarios}")
-
-                # Llenar los campos de comentarios con los datos obtenidos
-                for comentario in comentarios:
-                    if comentario['tipo_comentario'] == "Conclusión":
-                        self.conclusion_text_edit.setPlainText(comentario['comentario'])
-                    elif comentario['tipo_comentario'] in self.comment_fields:
-                        self.comment_fields[comentario['tipo_comentario']].setPlainText(comentario['comentario'])
-            else:
-                print(f"Error al obtener los comentarios: {response.status_code}")
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error de conexión: {str(e)}")
+        # Cargar la conclusión
+        conclusion_texto = comentarios_dict.get("conclusión", "")
+        self.conclusion_text_edit.setPlainText(conclusion_texto)
 
     def guardar_prueba(self):
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
@@ -299,7 +302,7 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
             print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
             return
         
-        for row in range(1, self.table_layout.rowCount() - 1):
+        for row in range(1, self.table_layout.rowCount()):
             widget = self.table_layout.itemAtPosition(row, 0).widget()
             if isinstance(widget, QLineEdit):
                 subprueba_nombre = widget.text().strip()
@@ -379,6 +382,7 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
                     print(f"Error al actualizar los resultados para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
             else:
                 print(f"Error al verificar la evaluación para la subprueba '{subprueba_nombre}': {response.status_code} - {response.text}")
+
     def guardar_comentarios(self):
         def procesar_comentario(i):
             comment_label = self.comment_layout.itemAtPosition(i, 0).widget().text()

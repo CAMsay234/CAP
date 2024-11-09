@@ -102,7 +102,9 @@ class PruebaLenguajeWindow(QMainWindow):
 
         # Sección de "Conclusiones Generales" con un solo cuadro grande
         self.add_conclusion_section("CONCLUSIONES GENERALES", main_layout)
-
+        self.cargar_datos_subpruebas()
+        self.cargar_datos_comentarios()
+        
         # Configurar el scroll y añadir el widget principal
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
@@ -201,177 +203,186 @@ class PruebaLenguajeWindow(QMainWindow):
         self.conclusion_text_edit.setFixedHeight(150)  # Ajustar altura fija
         layout.addWidget(self.conclusion_text_edit)
 
-    def cargar_datos_paciente(self):
-            """Función para cargar los datos de las evaluaciones del paciente."""
-            try:
-                # Obtener el ID de la prueba de lenguaje
-                response = requests.get('http://localhost:5000/pruebas')
-                if response.status_code == 200:
-                    pruebas = response.json()
-                    self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "lenguaje"), None)
-                    if self.prueba_id is None:
-                        print("Prueba de lenguaje no encontrada.")
-                        return
+    def cargar_datos_subpruebas(self):
+        def cargar_tabla(subpruebas, prueba_id, table_layout):
+            for row, subprueba_nombre in enumerate(subpruebas, start=1):
+                subprueba_nombre_completo = subprueba_nombre.lower()
+                subprueba_id = subpruebas_dict.get(subprueba_nombre_completo)
+                if subprueba_id:
+                    # Obtener los datos de la evaluación para la subprueba
+                    response = requests.get(f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{prueba_id}/{subprueba_id}")
+                    if response.status_code == 200:
+                        evaluacion = response.json()
+                        # Ubicar los datos en los espacios correspondientes
+                        table_layout.itemAtPosition(row, 1).widget().setText(evaluacion.get('puntaje', ''))
+                        table_layout.itemAtPosition(row, 2).widget().setText(evaluacion.get('media', ''))
+                        table_layout.itemAtPosition(row, 3).widget().setText(evaluacion.get('desviacion_estandar', ''))
+                        table_layout.itemAtPosition(row, 4).widget().setText(evaluacion.get('interpretacion', ''))
+                    else:
+                        # Si no hay datos, dejar los espacios en blanco
+                        table_layout.itemAtPosition(row, 1).widget().setText('')
+                        table_layout.itemAtPosition(row, 2).widget().setText('')
+                        table_layout.itemAtPosition(row, 3).widget().setText('')
+                        table_layout.itemAtPosition(row, 4).widget().setText('')
                 else:
-                    print(f"Error al obtener las pruebas: {response.status_code}")
-                    return
-
-                # Obtener todas las subpruebas para crear un mapeo basado en los nombres
-                response = requests.get('http://localhost:5000/subpruebas')
-                if response.status_code == 200:
-                    subpruebas = response.json()
-                    # Crear un mapeo de nombre de subprueba a ID
-                    subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
-                else:
-                    print(f"Error al obtener las subpruebas: {response.status_code}")
-                    subpruebas_map = {}
-
-                # Obtener las evaluaciones del paciente para esta prueba
-                url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    evaluaciones = response.json()
-                    print(f"Evaluaciones obtenidas: {evaluaciones}")
-
-                    # Llenar los campos de la tabla con los datos correspondientes
-                    for evaluacion in evaluaciones:
-                        subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
-
-                        # Asignar datos a las subpruebas normales
-                        for row in range(1, self.table_layout.rowCount()):
-                            widget = self.table_layout.itemAtPosition(row, 0).widget()
-                            if isinstance(widget, QLabel):
-                                nombre_subprueba = widget.text().strip()
-                                if nombre_subprueba == subprueba_nombre:
-                                    self.table_layout.itemAtPosition(row, 1).widget().setText(str(evaluacion['puntaje']))
-                                    self.table_layout.itemAtPosition(row, 2).widget().setText(str(evaluacion['media']))
-                                    self.table_layout.itemAtPosition(row, 3).widget().setText(str(evaluacion['desviacion_estandar']))
-                                    self.table_layout.itemAtPosition(row, 4).widget().setText(evaluacion['interpretacion'])
-                                    break
-
-                        if subprueba_nombre == "Otra prueba":
-                            otra_prueba_widget = self.table_layout.itemAtPosition(8, 0).widget()
-                            otra_prueba_widget.setText("Otra prueba")
-                            self.table_layout.itemAtPosition(8, 1).widget().setText(str(evaluacion['puntaje']))
-                            self.table_layout.itemAtPosition(8, 2).widget().setText(str(evaluacion['media']))
-                            self.table_layout.itemAtPosition(8, 3).widget().setText(str(evaluacion['desviacion_estandar']))
-                            self.table_layout.itemAtPosition(8, 4).widget().setText(evaluacion['interpretacion'])
-
-                    print("Datos cargados exitosamente.")
-                elif response.status_code == 404:
-                    print("No se encontraron evaluaciones para este paciente.")
-                else:
-                    print(f"Error al obtener las evaluaciones: {response.status_code}")
-
-                # Obtener los comentarios del paciente para esta prueba
-                url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    comentarios = response.json()
-                    print(f"Comentarios obtenidos: {comentarios}")
-
-                    # Llenar los campos de comentarios con los datos obtenidos
-                    for comentario in comentarios:
-                        if comentario['tipo_comentario'] == "Conclusión":
-                            self.conclusion_text_edit.setPlainText(comentario['comentario'])
-                        elif comentario['tipo_comentario'] in self.comment_fields:
-                            self.comment_fields[comentario['tipo_comentario']].setPlainText(comentario['comentario'])
-                else:
-                    print(f"Error al obtener los comentarios: {response.status_code}")
-
-            except requests.exceptions.RequestException as e:
-                print(f"Error de conexión: {str(e)}")
+                    # Si no hay subprueba, dejar los espacios en blanco
+                    table_layout.itemAtPosition(row, 1).widget().setText('')
+                    table_layout.itemAtPosition(row, 2).widget().setText('')
+                    table_layout.itemAtPosition(row, 3).widget().setText('')
+                    table_layout.itemAtPosition(row, 4).widget().setText('')
+    
+        # Obtener el ID de la prueba general "Lenguaje" desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+        
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "lenguaje"), None)
+        if prueba_id is None:
+            print(f"Prueba 'Lenguaje' no encontrada en la base de datos.")
+            return
+    
+        # Obtener todas las subpruebas asociadas a la prueba "Lenguaje"
+        response = requests.get('http://localhost:5000/subpruebas')
+        if response.status_code != 200:
+            print("Error al obtener las subpruebas")
+            return
+        
+        subpruebas = response.json()
+        subpruebas_dict = {sp['nombre'].lower(): sp['id'] for sp in subpruebas if sp['id_prueba'] == prueba_id}
+    
+        # Cargar los datos de la tabla
+        cargar_tabla(
+            ["Fluidez verbal semántica", "Fluidez verbal fonológica", "Token test", "Vocabulario", "Comprensión", "Mecánica de la escritura/5", "Escritura seriada/47", "Otra prueba"],
+            prueba_id,
+            self.table_layout
+        )
+    
+    def cargar_datos_comentarios(self):
+        # Obtener el ID de la prueba general "Lenguaje" desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+        
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "lenguaje"), None)
+        if prueba_id is None:
+            print(f"Prueba 'Lenguaje' no encontrada en la base de datos.")
+            return
+    
+        # Obtener todos los comentarios asociados a la prueba "Lenguaje"
+        response = requests.get(f'http://localhost:5000/comentarios/{self.paciente_seleccionado["codigo_hc"]}/{prueba_id}')
+        if response.status_code != 200:
+            print("Error al obtener los comentarios")
+            return
+        
+        comentarios = response.json()
+        comentarios_dict = {c['tipo_comentario'].lower(): c['comentario'] for c in comentarios}
+    
+        # Cargar los datos de los comentarios clínicos
+        for row, comentario_tipo in enumerate([
+            "Fonológico: (evaluación de la producción y comprensión de sonidos del lenguaje: fonemas)", 
+            "Morfológico (Unidades con significado compuesta por uno o varios fonemas)",
+            "Sintaxis (Se refiere a la organización adecuada de las palabras dentro de la oración)",
+            "Semántica (se refiere al significado de las palabras; alteraciones en el contenido del lenguaje)",
+            "Pragmática  (se refiere a la utilización adecuada del lenguaje dentro de un contexto social)"
+        ]):
+            comentario_tipo_lower = comentario_tipo.lower()
+            comentario_texto = comentarios_dict.get(comentario_tipo_lower, "")
+            self.comment_layout.itemAtPosition(row, 1).widget().setPlainText(comentario_texto)
+    
+        # Cargar la conclusión
+        conclusion_texto = comentarios_dict.get("conclusión", "")
+        self.conclusion_text_edit.setPlainText(conclusion_texto)
 
     def guardar_prueba(self):
-            def procesar_subprueba(nombre_subprueba, input_fields):
-                # Extraer los valores ingresados
-                puntaje = input_fields[0].text().strip() or None
-                media = input_fields[1].text().strip() or None
-                ds = input_fields[2].text().strip() or None
-                interpretacion = input_fields[3].text().strip()
-
-                if not interpretacion:
-                    print(f"Faltan datos para la subprueba '{nombre_subprueba}'.")
-                    return
-
-                # Verificar si la subprueba existe en la base de datos
-                response = requests.get('http://localhost:5000/subpruebas')
-                if response.status_code != 200:
-                    print(f"Error al obtener las subpruebas: {response.status_code}")
-                    return
-
-                subpruebas = response.json()
-                subprueba_id = next(
-                    (sp['id'] for sp in subpruebas if sp['nombre'].lower() == nombre_subprueba.lower()), None
-                )
-
-                # Si no existe, registrar la subprueba
-                if subprueba_id is None:
-                    data = {"id_prueba": self.prueba_id, "nombre": nombre_subprueba}
-                    response = requests.post('http://localhost:5000/subpruebas', json=data)
-                    if response.status_code == 201:
-                        subprueba_id = response.json().get('id')
-                    else:
-                        print(f"Error al registrar la subprueba '{nombre_subprueba}': {response.text}")
-                        return
-
-                # Preparar los datos para guardar la evaluación
-                data = {
-                    "codigo_hc": self.paciente_seleccionado['codigo_hc'],
-                    "id_prueba": self.prueba_id,
-                    "id_subprueba": subprueba_id,
-                    "puntaje": puntaje,
-                    "media": media,
-                    "desviacion_estandar": ds,
-                    "escalar": "N/A",
-                    "interpretacion": interpretacion
-                }
-
-                # Verificar si ya existe la evaluación
-                url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/{subprueba_id}"
-                response = requests.get(url)
-
-                if response.status_code == 404:
-                    # Insertar nueva evaluación
-                    response = requests.post('http://localhost:5000/evaluaciones', json=data)
-                    if response.status_code == 201:
-                        print(f"Evaluación guardada para '{nombre_subprueba}'.")
-                    else:
-                        print(f"Error al guardar la evaluación: {response.text}")
-                elif response.status_code == 200:
-                    # Actualizar evaluación existente
-                    response = requests.put(url, json=data)
-                    if response.status_code == 200:
-                        print(f"Evaluación actualizada para '{nombre_subprueba}'.")
-                    else:
-                        print(f"Error al actualizar la evaluación: {response.text}")
-
-            # Obtener el ID de la prueba
-            response = requests.get('http://localhost:5000/pruebas')
-            if response.status_code != 200:
-                print("Error al obtener las pruebas.")
-                return
-
-            pruebas = response.json()
-            self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "atención y concentración"), None)
-            if self.prueba_id is None:
-                print("Prueba no encontrada.")
-                return
-
-            # Procesar las subpruebas normales y las secciones adicionales
-            threads = []
+        def procesar_subprueba(row, nombre_subprueba, table_layout):
+            puntaje_widget = table_layout.itemAtPosition(row, 1)
+            media_widget = table_layout.itemAtPosition(row, 2)
+            ds_widget = table_layout.itemAtPosition(row, 3)
+            interpretacion_widget = table_layout.itemAtPosition(row, 4)
             
-            # Procesar las secciones adicionales (Tachado de Cuadros, Rastreo de Caminos)
-            for nombre, input_fields in self.section_inputs.items():
-                thread = threading.Thread(target=procesar_subprueba, args=(nombre, input_fields))
-                threads.append(thread)
-                thread.start()
-
-            # Esperar a que todos los hilos terminen
-            for thread in threads:
-                thread.join()
-
-            print("Todas las subpruebas y secciones adicionales han sido guardadas.")
+            puntaje = puntaje_widget.widget().text().strip() if puntaje_widget and puntaje_widget.widget() else None
+            media = media_widget.widget().text().strip() if media_widget and media_widget.widget() else ""
+            ds = ds_widget.widget().text().strip() if ds_widget and ds_widget.widget() else ""
+            interpretacion = interpretacion_widget.widget().text().strip() if interpretacion_widget and interpretacion_widget.widget() else None
+    
+            if not interpretacion:
+                print(f"Faltan datos para la subprueba '{nombre_subprueba}'.")
+                return
+    
+            # Verificar si la subprueba existe en la base de datos
+            response = requests.get('http://localhost:5000/subpruebas')
+            if response.status_code != 200:
+                print(f"Error al obtener las subpruebas: {response.status_code}")
+                return
+    
+            subpruebas = response.json()
+            subprueba_id = next(
+                (sp['id'] for sp in subpruebas if sp['nombre'].lower() == nombre_subprueba.lower()), None
+            )
+    
+            # Si no existe, registrar la subprueba
+            if subprueba_id is None:
+                data = {"id_prueba": self.prueba_id, "nombre": nombre_subprueba}
+                response = requests.post('http://localhost:5000/subpruebas', json=data)
+                if response.status_code == 201:
+                    subprueba_id = response.json().get('id')
+                else:
+                    print(f"Error al registrar la subprueba '{nombre_subprueba}': {response.text}")
+                    return
+    
+            # Preparar los datos para guardar la evaluación
+            data = {
+                "codigo_hc": self.paciente_seleccionado['codigo_hc'],
+                "id_prueba": self.prueba_id,
+                "id_subprueba": subprueba_id,
+                "puntaje": puntaje,
+                "media": media,
+                "desviacion_estandar": ds,
+                "escalar": "N/A",
+                "interpretacion": interpretacion
+            }
+    
+            # Verificar si ya existe la evaluación
+            url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/{subprueba_id}"
+            response = requests.get(url)
+    
+            if response.status_code == 404:
+                # Insertar nueva evaluación
+                response = requests.post('http://localhost:5000/evaluaciones', json=data)
+                if response.status_code == 201:
+                    print(f"Evaluación guardada para '{nombre_subprueba}'.")
+                else:
+                    print(f"Error al guardar la evaluación: {response.text}")
+            elif response.status_code == 200:
+                # Actualizar evaluación existente
+                response = requests.put(url, json=data)
+                if response.status_code == 200:
+                    print(f"Evaluación actualizada para '{nombre_subprueba}'.")
+                else:
+                    print(f"Error al actualizar la evaluación: {response.text}")
+    
+        # Obtener el ID de la prueba
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas.")
+            return
+    
+        pruebas = response.json()
+        self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "lenguaje"), None)
+        if self.prueba_id is None:
+            print("Prueba no encontrada.")
+            return
+    
+        # Procesar las subpruebas establecidas
+        subpruebas = ["Fluidez verbal semántica", "Fluidez verbal fonológica", "Token test", "Vocabulario", "Comprensión", "Mecánica de la escritura/5", "Escritura seriada/47", "Otra prueba"]
+        for row, subprueba_nombre in enumerate(subpruebas, start=1):
+            procesar_subprueba(row, subprueba_nombre, self.table_layout)
+    
+        print("Todas las subpruebas han sido guardadas.")
 
     def guardar_comentarios(self):
         def procesar_comentario(i):
