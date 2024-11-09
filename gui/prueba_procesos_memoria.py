@@ -102,10 +102,11 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
             "Memoria a corto plazo", "Memoria largo plazo"
         ]
         self.add_comment_section("COMENTARIO CLÍNICO", comentarios_clinicos, main_layout)
-
+        
         # Sección de "Conclusiones Generales" con un solo cuadro grande
         self.add_conclusion_section("CONCLUSIONES GENERALES", main_layout)
-
+        # Cargar datos de comentarios clínicos
+        self.cargar_datos_comentarios()
         # Configurar el scroll y añadir el widget principal
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
@@ -391,6 +392,43 @@ class PruebaProcesosMemoriaWindow(QMainWindow):
             prueba_id,
             self.table_layout_curva_memoria_visual
         )
+
+    def cargar_datos_comentarios(self):
+        # Obtener el ID de la prueba general "Proceso de Memoria" desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+        
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "procesos de memoria"), None)
+        if prueba_id is None:
+            print(f"Prueba 'Procesos de memoria' no encontrada en la base de datos.")
+            return
+    
+        # Obtener todos los comentarios asociados a la prueba "Proceso de Memoria"
+        response = requests.get(f'http://localhost:5000/comentarios/{self.paciente_seleccionado["codigo_hc"]}/{prueba_id}')
+        if response.status_code != 200:
+            print("Error al obtener los comentarios")
+            return
+        
+        comentarios = response.json()
+        comentarios_dict = {c['tipo_comentario'].lower(): c['comentario'] for c in comentarios}
+    
+        # Cargar los datos de los comentarios clínicos
+        for row, comentario_tipo in enumerate([
+            "Curva de aprendizaje de información verbal", "Curva de aprendizaje no verbal",
+            "Proceso de codificación, almacenamiento y evocación", "Memoria de trabajo",
+            "Memoria semántica", "Memoria no verbal", "Memoria autobiográfica",
+            "Memoria a corto plazo", "Memoria largo plazo"
+        ]):
+            comentario_tipo_lower = comentario_tipo.lower()
+            comentario_texto = comentarios_dict.get(comentario_tipo_lower, "")
+            self.comment_layout.itemAtPosition(row, 1).widget().setPlainText(comentario_texto)
+    
+        # Cargar la conclusión
+        conclusion_texto = comentarios_dict.get("conclusión", "")
+        self.conclusion_text_edit.setPlainText(conclusion_texto)
 
     def guardar_comentarios(self):
         def procesar_comentario(i):
