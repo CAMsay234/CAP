@@ -143,7 +143,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         main_layout.addLayout(self.table_layout)
 
         # Sección de "Tachado de Cuadros"
-        self.add_section("TACHADO DE CUADROS", ["Aciertos 48/", "Errores", "Tiempo Tachado de cuadros"], main_layout)
+        self.add_section("TACHADO DE CUADROS", ["Aciertos 48/", "Errores Tachado de cuadros", "Tiempo Tachado de cuadros"], main_layout)
 
         # Sección de "Test de Rastreo de Caminos A."
         self.add_section("TEST DE RASTREOS DE CAMINOS A.", ["Tiempo Test de rastreo", "Curva de Memoria. Span"], main_layout)
@@ -206,25 +206,30 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
     def add_comment_section(self, title, comments, layout):
         """Añadir sección de comentarios clínicos con múltiples líneas"""
         title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 14, QFont.Bold))  # Letra más pequeña
-        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")  # Fondo azul claro y letra blanca
+        title_label.setFont(QFont('Arial', 14, QFont.Bold))
+        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")
         layout.addWidget(title_label)
 
         self.comment_layout = QGridLayout()
+        self.comment_fields = {}  # Diccionario para almacenar los QTextEdit asociados a cada comentario
+
         for i, comment in enumerate(comments):
             label = QLabel(comment)
             label.setFont(QFont('Arial', 14))
-            label.setProperty("comentarios", True)  # Letra más pequeña
-            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")  # Letra negra y fondo gris
-            label.setWordWrap(True)  # Asegurar que el texto se envuelva
+            label.setProperty("comentarios", True)
+            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+            label.setWordWrap(True)
             self.comment_layout.addWidget(label, i, 0)
 
             # Añadir campo de texto asociado al comentario
             input_field = QTextEdit()
             input_field.setFont(QFont('Arial', 12))
-            input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde a las casillas de comentarios
-            input_field.setFixedHeight(150)  # Ajustar altura fija
+            input_field.setStyleSheet("border: 1px solid black;")
+            input_field.setFixedHeight(150)
             self.comment_layout.addWidget(input_field, i, 1)
+
+            # Guardar el campo de texto en el diccionario usando el comentario como clave
+            self.comment_fields[comment] = input_field
 
         layout.addLayout(self.comment_layout)
 
@@ -288,7 +293,7 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
                             input_fields[3].setText(evaluacion['interpretacion'])
 
                 # Cargar los datos específicos de las secciones adicionales
-                secciones_adicionales = ["Aciertos 48/", "Errores", "Tiempo Tachado de cuadros", "Tiempo Test de rastreo", "Curva de Memoria verbal. Spán"]
+                secciones_adicionales = ["Aciertos 48/", "Errores Tachado de cuadros", "Tiempo Tachado de cuadros", "Tiempo Test de rastreo", "Curva de Memoria verbal. Spán"]
                 for seccion in secciones_adicionales:
                     if seccion in self.section_inputs:
                         # Buscar la evaluación correspondiente a la sección
@@ -310,17 +315,19 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
             else:
                 print(f"Error al obtener las evaluaciones: {response.status_code}")
 
-            # Obtener los comentarios del paciente para esta prueba
-            url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/"
+           # Obtener los comentarios del paciente para esta prueba
+            url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
             response = requests.get(url)
             if response.status_code == 200:
                 comentarios = response.json()
                 print(f"Comentarios obtenidos: {comentarios}")
 
                 # Llenar los campos de comentarios con los datos obtenidos
-                for i, comentario in enumerate(comentarios):
-                    if i < self.comment_layout.rowCount():
-                        self.comment_layout.itemAtPosition(i, 1).widget().setPlainText(comentario['comentario'])
+                for comentario in comentarios:
+                    if comentario['tipo_comentario'] == "Conclusión":
+                        self.conclusion_text_edit.setPlainText(comentario['comentario'])
+                    elif comentario['tipo_comentario'] in self.comment_fields:
+                        self.comment_fields[comentario['tipo_comentario']].setPlainText(comentario['comentario'])
             else:
                 print(f"Error al obtener los comentarios: {response.status_code}")
 
@@ -600,7 +607,6 @@ class PruebaAtencionConcentracionWindow(QMainWindow):
         except Exception as e:
             # Mostrar mensaje de error si hubo algún problema
             self.mostrar_mensaje("Error", f"Ocurrió un error al guardar los datos: {str(e)}", QMessageBox.Critical)
-
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":

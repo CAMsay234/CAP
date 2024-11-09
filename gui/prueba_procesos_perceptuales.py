@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit, QMessageBox
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -118,8 +118,9 @@ class PruebaProcesosPerceptualesWindow(QMainWindow):
             response = requests.get('http://localhost:5000/subpruebas')
             if response.status_code == 200:
                 subpruebas = response.json()
-                # Crear un mapeo de ID de subprueba a nombre
-                subpruebas_map = {sp['id']: sp['nombre'] for sp in subpruebas}
+                # Crear un mapeo de nombre de subprueba a ID
+                subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
+                print("Contenido de subpruebas_map:", subpruebas_map)
             else:
                 print(f"Error al obtener las subpruebas: {response.status_code}")
                 subpruebas_map = {}
@@ -131,10 +132,9 @@ class PruebaProcesosPerceptualesWindow(QMainWindow):
                 evaluaciones = response.json()
                 print(f"Evaluaciones obtenidas: {evaluaciones}")
 
-                # Llenar los campos de la tabla con los datos correspondientes
+                 # Llenar los campos de la tabla de subpruebas con los datos correspondientes
                 for evaluacion in evaluaciones:
-                    subprueba_id = evaluacion['id_subprueba']
-                    subprueba_nombre = subpruebas_map.get(subprueba_id, "Desconocido")
+                    subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
 
                     # Asignar datos a las subpruebas normales
                     for row in range(1, self.table_layout.rowCount()):
@@ -148,14 +148,14 @@ class PruebaProcesosPerceptualesWindow(QMainWindow):
                                 self.table_layout.itemAtPosition(row, 4).widget().setText(evaluacion['interpretacion'])
                                 break
 
-                    if subprueba_nombre == "Otra Prueba":
-                        otra_prueba_widget = self.table_layout.itemAtPosition(9, 0).widget()
-                        if isinstance(otra_prueba_widget, QLineEdit):
-                            otra_prueba_widget.setText("Otra Prueba")
-                        self.table_layout.itemAtPosition(9, 1).widget().setText(str(evaluacion['puntaje']))
-                        self.table_layout.itemAtPosition(9, 2).widget().setText(str(evaluacion['media']))
-                        self.table_layout.itemAtPosition(9, 3).widget().setText(str(evaluacion['desviacion_estandar']))
-                        self.table_layout.itemAtPosition(9, 4).widget().setText(evaluacion['interpretacion'])
+                    # if subprueba_nombre == "Otra Prueba":
+                    #     otra_prueba_widget = self.table_layout.itemAtPosition(9, 0).widget()
+                    #     if isinstance(otra_prueba_widget, QLineEdit):
+                    #         otra_prueba_widget.setText("Otra Prueba")
+                    #     self.table_layout.itemAtPosition(9, 1).widget().setText(str(evaluacion['puntaje']))
+                    #     self.table_layout.itemAtPosition(9, 2).widget().setText(str(evaluacion['media']))
+                    #     self.table_layout.itemAtPosition(9, 3).widget().setText(str(evaluacion['desviacion_estandar']))
+                    #     self.table_layout.itemAtPosition(9, 4).widget().setText(evaluacion['interpretacion'])
                     
                 print("Datos cargados exitosamente.")
             elif response.status_code == 404:
@@ -420,10 +420,27 @@ class PruebaProcesosPerceptualesWindow(QMainWindow):
         except requests.exceptions.RequestException as e:
             print(f"Error al realizar la solicitud: {e}")
 
+    def mostrar_mensaje(self, titulo, mensaje, icono=QMessageBox.Information):
+            """Función para mostrar un mensaje al usuario."""
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle(titulo)
+            msg_box.setText(mensaje)
+            msg_box.setIcon(icono)
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.exec_()
 
     def guardar_todo(self):
-        self.guardar_prueba()
-        self.guardar_conclusion()
+        """Función para guardar todas las evaluaciones, comentarios y conclusiones."""
+        try:
+            # Intentar guardar todas las secciones
+            self.guardar_prueba()
+            self.guardar_conclusion()
+
+            # Mostrar mensaje de éxito si todo se guardó correctamente
+            self.mostrar_mensaje("Éxito", "Datos guardados correctamente", QMessageBox.Information)
+        except Exception as e:
+            # Mostrar mensaje de error si hubo algún problema
+            self.mostrar_mensaje("Error", f"Ocurrió un error al guardar los datos: {str(e)}", QMessageBox.Critical)
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
