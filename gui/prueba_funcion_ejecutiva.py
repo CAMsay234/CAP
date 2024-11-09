@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit, QMessageBox
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -155,30 +155,34 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
         layout.addLayout(self.table_layout)
 
     def add_comment_section(self, title, comments, layout):
-        """Añadir sección de comentarios clínicos con múltiples líneas"""
-        title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 14, QFont.Bold))  # Letra más pequeña
-        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")  # Fondo azul claro y letra blanca
-        layout.addWidget(title_label)
+            """Añadir sección de comentarios clínicos con múltiples líneas"""
+            title_label = QLabel(title)
+            title_label.setFont(QFont('Arial', 14, QFont.Bold))
+            title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")
+            layout.addWidget(title_label)
 
-        self.comment_layout = QGridLayout()
-        for i, comment in enumerate(comments):
-            label = QLabel(comment)
-            label.setFont(QFont('Arial', 14))
-            label.setProperty("comentarios", True)  # Letra más pequeña
-            label.setFixedWidth(450)  # Ajustar altura fija
-            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")  # Letra negra y fondo gris
-            label.setWordWrap(True)  # Asegurar que el texto se envuelva
-            self.comment_layout.addWidget(label, i, 0)
+            self.comment_layout = QGridLayout()
+            self.comment_fields = {}  # Diccionario para almacenar los QTextEdit asociados a cada comentario
 
-            # Añadir campo de texto asociado al comentario
-            input_field = QTextEdit()
-            input_field.setFont(QFont('Arial', 12))
-            input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde a las casillas de comentarios
-            input_field.setFixedHeight(150)  # Ajustar altura fija
-            self.comment_layout.addWidget(input_field, i, 1)
+            for i, comment in enumerate(comments):
+                label = QLabel(comment)
+                label.setFont(QFont('Arial', 14))
+                label.setProperty("comentarios", True)
+                label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+                label.setWordWrap(True)
+                self.comment_layout.addWidget(label, i, 0)
 
-        layout.addLayout(self.comment_layout)
+                # Añadir campo de texto asociado al comentario
+                input_field = QTextEdit()
+                input_field.setFont(QFont('Arial', 12))
+                input_field.setStyleSheet("border: 1px solid black;")
+                input_field.setFixedHeight(150)
+                self.comment_layout.addWidget(input_field, i, 1)
+
+                # Guardar el campo de texto en el diccionario usando el comentario como clave
+                self.comment_fields[comment] = input_field
+
+            layout.addLayout(self.comment_layout)
 
     def add_conclusion_section(self, title, layout):
         """Añadir sección de conclusiones generales"""
@@ -192,6 +196,94 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
         self.conclusion_text_edit.setStyleSheet("border: 1px solid black;")
         self.conclusion_text_edit.setFixedHeight(150)  # Ajustar altura fija
         layout.addWidget(self.conclusion_text_edit)
+    
+    def cargar_datos_paciente(self):
+        """Función para cargar los datos de las evaluaciones del paciente."""
+        try:
+            # Obtener el ID de la prueba de atención y concentración
+            response = requests.get('http://localhost:5000/pruebas')
+            if response.status_code == 200:
+                pruebas = response.json()
+                self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "atención y concentración"), None)
+                if self.prueba_id is None:
+                    print("Prueba de atención y concentración no encontrada.")
+                    return
+            else:
+                print(f"Error al obtener las pruebas: {response.status_code}")
+                return
+
+            # Obtener todas las subpruebas para crear un mapeo basado en los nombres
+            response = requests.get('http://localhost:5000/subpruebas')
+            if response.status_code == 200:
+                subpruebas = response.json()
+                # Crear un mapeo de nombre de subprueba a ID
+                subpruebas_map = {sp['nombre']: sp['id'] for sp in subpruebas}
+                print("Contenido de subpruebas_map:", subpruebas_map)
+            else:
+                print(f"Error al obtener las subpruebas: {response.status_code}")
+                subpruebas_map = {}
+
+            # Obtener las evaluaciones del paciente para esta prueba
+            url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                evaluaciones = response.json()
+                print(f"Evaluaciones obtenidas: {evaluaciones}")
+
+                # Llenar los campos de la tabla de subpruebas con los datos correspondientes
+                for evaluacion in evaluaciones:
+                    subprueba_nombre = next((nombre for nombre, id in subpruebas_map.items() if id == evaluacion['id_subprueba']), "Desconocido")
+
+                    # Asignar datos a las subpruebas normales
+                    if subprueba_nombre in self.section_inputs:
+                        input_fields = self.section_inputs[subprueba_nombre]
+                        if input_fields:
+                            input_fields[0].setText(str(evaluacion['puntaje']))
+                            input_fields[1].setText(str(evaluacion['media']))
+                            input_fields[2].setText(str(evaluacion['desviacion_estandar']))
+                            input_fields[3].setText(evaluacion['interpretacion'])
+
+                # Cargar los datos específicos de las secciones adicionales
+                secciones_adicionales = ["Aciertos 48/", "Errores Tachado de cuadros", "Tiempo Tachado de cuadros", "Tiempo Test de rastreo", "Curva de Memoria verbal. Spán"]
+                for seccion in secciones_adicionales:
+                    if seccion in self.section_inputs:
+                        # Buscar la evaluación correspondiente a la sección
+                        evaluacion_seccion = next((e for e in evaluaciones if subpruebas_map.get(seccion) == e['id_subprueba']), None)
+                        if evaluacion_seccion:
+                            # Llenar los campos de entrada de la sección con los valores obtenidos
+                            input_fields = self.section_inputs[seccion]
+                            print(f"Cargando datos para la sección: {seccion}")
+                            input_fields[0].setText(str(evaluacion_seccion['puntaje']))
+                            input_fields[1].setText(str(evaluacion_seccion['media']))
+                            input_fields[2].setText(str(evaluacion_seccion['desviacion_estandar']))
+                            input_fields[3].setText(evaluacion_seccion['interpretacion'])
+                        else:
+                            print(f"No se encontró evaluación para la sección: {seccion}")
+
+                print("Datos cargados exitosamente.")
+            elif response.status_code == 404:
+                print("No se encontraron evaluaciones para este paciente.")
+            else:
+                print(f"Error al obtener las evaluaciones: {response.status_code}")
+
+           # Obtener los comentarios del paciente para esta prueba
+            url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                comentarios = response.json()
+                print(f"Comentarios obtenidos: {comentarios}")
+
+                # Llenar los campos de comentarios con los datos obtenidos
+                for comentario in comentarios:
+                    if comentario['tipo_comentario'] == "Conclusión":
+                        self.conclusion_text_edit.setPlainText(comentario['comentario'])
+                    elif comentario['tipo_comentario'] in self.comment_fields:
+                        self.comment_fields[comentario['tipo_comentario']].setPlainText(comentario['comentario'])
+            else:
+                print(f"Error al obtener los comentarios: {response.status_code}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error de conexión: {str(e)}")
 
     def guardar_prueba(self):
         prueba_nombre = self.windowTitle().replace("Prueba ", "")
@@ -375,10 +467,28 @@ class PruebaFuncionEjecutivaWindow(QMainWindow):
         except requests.exceptions.RequestException as e:
             print(f"Error al realizar la solicitud: {e}")
 
+    def mostrar_mensaje(self, titulo, mensaje, icono=QMessageBox.Information):
+            """Función para mostrar un mensaje al usuario."""
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle(titulo)
+            msg_box.setText(mensaje)
+            msg_box.setIcon(icono)
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.exec_()
+
     def guardar_todo(self):
-        self.guardar_prueba()
-        self.guardar_comentarios()
-        self.guardar_conclusion()
+        """Función para guardar todas las evaluaciones, comentarios y conclusiones."""
+        try:
+            # Intentar guardar todas las secciones
+            self.guardar_prueba()
+            self.guardar_comentarios()
+            self.guardar_conclusion()
+
+            # Mostrar mensaje de éxito si todo se guardó correctamente
+            self.mostrar_mensaje("Éxito", "Datos guardados correctamente", QMessageBox.Information)
+        except Exception as e:
+            # Mostrar mensaje de error si hubo algún problema
+            self.mostrar_mensaje("Error", f"Ocurrió un error al guardar los datos: {str(e)}", QMessageBox.Critical)
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":

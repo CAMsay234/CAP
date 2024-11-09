@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit
+    QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QScrollArea, QPushButton, QTextEdit, QMessageBox
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
@@ -106,6 +106,93 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
         # Llamar a la función para cargar los datos del paciente
         self.cargar_datos_paciente()
 
+    def add_table(self, title, tests, layout):
+        """Función para agregar una tabla con los datos de las pruebas."""
+        title_label = QLabel(title)
+        title_label.setFont(QFont('Arial', 16, QFont.Bold))
+        title_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
+        layout.addWidget(title_label)
+
+        self.table_layout = QGridLayout()  # Inicializar self.table_layout
+        headers = ["DIMENSIÓN NEUROCOGNITIVA", "PUNTAJE", "INTERPRETACIÓN"]
+
+        # Agregar encabezados a la tabla
+        for col, header in enumerate(headers):
+            header_label = QLabel(header)
+            header_label.setFont(QFont('Arial', 14, QFont.Bold))
+            header_label.setStyleSheet("color: white; background-color: #4A90E2; padding: 10px; border-radius: 5px;")
+            header_label.setAlignment(Qt.AlignCenter)
+            self.table_layout.addWidget(header_label, 0, col)
+
+        # Agregar filas de pruebas
+        for row, test in enumerate(tests, start=1):
+            if test == "Otra prueba":
+                # Campo de entrada para "Otra prueba"
+                test_label = QLineEdit()
+                test_label.setPlaceholderText("Ingrese el nombre de la prueba")
+                test_label.setAlignment(Qt.AlignCenter)
+                test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+                self.table_layout.addWidget(test_label, row, 0)
+            else:
+                # Nombre de la prueba
+                test_label = QLabel(test)
+                test_label.setProperty("pruebas", True)
+                test_label.setAlignment(Qt.AlignCenter)
+                test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+                self.table_layout.addWidget(test_label, row, 0)
+
+            # Campos de entrada para Puntaje, Media, DS, Interpretación
+            for col in range(1, 3):
+                input_field = QLineEdit()
+                input_field.setFixedHeight(35)
+                input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde
+                self.table_layout.addWidget(input_field, row, col)
+
+        layout.addLayout(self.table_layout)
+
+    def add_comment_section(self, title, comments, layout):
+            """Añadir sección de comentarios clínicos con múltiples líneas"""
+            title_label = QLabel(title)
+            title_label.setFont(QFont('Arial', 14, QFont.Bold))
+            title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")
+            layout.addWidget(title_label)
+
+            self.comment_layout = QGridLayout()
+            self.comment_fields = {}  # Diccionario para almacenar los QTextEdit asociados a cada comentario
+
+            for i, comment in enumerate(comments):
+                label = QLabel(comment)
+                label.setFont(QFont('Arial', 14))
+                label.setProperty("comentarios", True)
+                label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
+                label.setWordWrap(True)
+                self.comment_layout.addWidget(label, i, 0)
+
+                # Añadir campo de texto asociado al comentario
+                input_field = QTextEdit()
+                input_field.setFont(QFont('Arial', 12))
+                input_field.setStyleSheet("border: 1px solid black;")
+                input_field.setFixedHeight(150)
+                self.comment_layout.addWidget(input_field, i, 1)
+
+                # Guardar el campo de texto en el diccionario usando el comentario como clave
+                self.comment_fields[comment] = input_field
+
+            layout.addLayout(self.comment_layout)
+
+    def add_conclusion_section(self, title, layout):
+        """Añadir sección de conclusiones generales"""
+        title_label = QLabel(title)
+        title_label.setFont(QFont('Arial', 14, QFont.Bold))
+        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")
+        layout.addWidget(title_label)
+
+        self.conclusion_text_edit = QTextEdit()
+        self.conclusion_text_edit.setFont(QFont('Arial', 12))
+        self.conclusion_text_edit.setStyleSheet("border: 1px solid black;")
+        self.conclusion_text_edit.setFixedHeight(150)  # Ajustar altura fija
+        layout.addWidget(self.conclusion_text_edit)
+
     def cargar_datos_paciente(self):
             """Función para cargar los datos de las evaluaciones del paciente."""
             try:
@@ -165,17 +252,19 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
                 else:
                     print(f"Error al obtener las evaluaciones: {response.status_code}")
 
-                # Obtener los comentarios del paciente para esta prueba
-                url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/"
+                    # Obtener los comentarios del paciente para esta prueba
+                url = f"http://localhost:5000/comentarios/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}"
                 response = requests.get(url)
                 if response.status_code == 200:
                     comentarios = response.json()
                     print(f"Comentarios obtenidos: {comentarios}")
 
                     # Llenar los campos de comentarios con los datos obtenidos
-                    for i, comentario in enumerate(comentarios):
-                        if i < self.comment_layout.rowCount():
-                            self.comment_layout.itemAtPosition(i, 1).widget().setPlainText(comentario['comentario'])
+                    for comentario in comentarios:
+                        if comentario['tipo_comentario'] == "Conclusión":
+                            self.conclusion_text_edit.setPlainText(comentario['comentario'])
+                        elif comentario['tipo_comentario'] in self.comment_fields:
+                            self.comment_fields[comentario['tipo_comentario']].setPlainText(comentario['comentario'])
                 else:
                     print(f"Error al obtener los comentarios: {response.status_code}")
 
@@ -189,89 +278,6 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
             self.evaluacion_neuropsicologica_window = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)  # Crear la ventana de registrar paciente
             self.evaluacion_neuropsicologica_window.show()  # Mostrar la ventana de registrar paciente
             self.close()  # Cerrar la ventana actual
-
-    def add_table(self, title, tests, layout):
-        """Función para agregar una tabla con los datos de las pruebas."""
-        title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 16, QFont.Bold))
-        title_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
-        layout.addWidget(title_label)
-
-        self.table_layout = QGridLayout()  # Inicializar self.table_layout
-        headers = ["DIMENSIÓN NEUROCOGNITIVA", "PUNTAJE", "INTERPRETACIÓN"]
-
-        # Agregar encabezados a la tabla
-        for col, header in enumerate(headers):
-            header_label = QLabel(header)
-            header_label.setFont(QFont('Arial', 14, QFont.Bold))
-            header_label.setStyleSheet("color: white; background-color: #4A90E2; padding: 10px; border-radius: 5px;")
-            header_label.setAlignment(Qt.AlignCenter)
-            self.table_layout.addWidget(header_label, 0, col)
-
-        # Agregar filas de pruebas
-        for row, test in enumerate(tests, start=1):
-            if test == "Otra prueba":
-                # Campo de entrada para "Otra prueba"
-                test_label = QLineEdit()
-                test_label.setPlaceholderText("Ingrese el nombre de la prueba")
-                test_label.setAlignment(Qt.AlignCenter)
-                test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
-                self.table_layout.addWidget(test_label, row, 0)
-            else:
-                # Nombre de la prueba
-                test_label = QLabel(test)
-                test_label.setProperty("pruebas", True)
-                test_label.setAlignment(Qt.AlignCenter)
-                test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
-                self.table_layout.addWidget(test_label, row, 0)
-
-            # Campos de entrada para Puntaje, Media, DS, Interpretación
-            for col in range(1, 3):
-                input_field = QLineEdit()
-                input_field.setFixedHeight(35)
-                input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde
-                self.table_layout.addWidget(input_field, row, col)
-
-        layout.addLayout(self.table_layout)
-
-    def add_comment_section(self, title, comments, layout):
-        """Añadir sección de comentarios clínicos con múltiples líneas"""
-        title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 14, QFont.Bold))  # Letra más pequeña
-        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")  # Fondo azul claro y letra blanca
-        layout.addWidget(title_label)
-
-        self.comment_layout = QGridLayout()
-        for i, comment in enumerate(comments):
-            label = QLabel(comment)
-            label.setFont(QFont('Arial', 14))
-            label.setProperty("comentarios", True)  # Letra más pequeña
-            label.setFixedWidth(450)  # Ajustar altura fija
-            label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")  # Letra negra y fondo gris
-            label.setWordWrap(True)  # Asegurar que el texto se envuelva
-            self.comment_layout.addWidget(label, i, 0)
-
-            # Añadir campo de texto asociado al comentario
-            input_field = QTextEdit()
-            input_field.setFont(QFont('Arial', 12))
-            input_field.setStyleSheet("border: 1px solid black;")  # Añadir borde a las casillas de comentarios
-            input_field.setFixedHeight(150)  # Ajustar altura fija
-            self.comment_layout.addWidget(input_field, i, 1)
-
-        layout.addLayout(self.comment_layout)
-
-    def add_conclusion_section(self, title, layout):
-        """Añadir sección de conclusiones generales"""
-        title_label = QLabel(title)
-        title_label.setFont(QFont('Arial', 14, QFont.Bold))
-        title_label.setStyleSheet("background-color: #4A90E2; color: white; padding: 5px; border-radius: 5px;")
-        layout.addWidget(title_label)
-
-        self.conclusion_text_edit = QTextEdit()
-        self.conclusion_text_edit.setFont(QFont('Arial', 12))
-        self.conclusion_text_edit.setStyleSheet("border: 1px solid black;")
-        self.conclusion_text_edit.setFixedHeight(150)  # Ajustar altura fija
-        layout.addWidget(self.conclusion_text_edit)
 
     def guardar_prueba(self):
         def procesar_subprueba(row):
@@ -457,13 +463,28 @@ class PruebaFuncionesNeurocognitivasWindow(QMainWindow):
             print("Error al guardar la conclusión")
 
         print("Conclusión guardada exitosamente")
+
+    def mostrar_mensaje(self, titulo, mensaje, icono=QMessageBox.Information):
+        """Función para mostrar un mensaje al usuario."""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(titulo)
+        msg_box.setText(mensaje)
+        msg_box.setIcon(icono)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()
     
     def guardar_todo(self):
-        self.guardar_prueba()
-        self.guardar_comentarios()
-        self.guardar_conclusion()
+        try:
+            # Intentar guardar todas las secciones
+            self.guardar_prueba()
+            self.guardar_comentarios()
+            self.guardar_conclusion()
 
-       
+            # Mostrar mensaje de éxito si todo se guardó correctamente
+            self.mostrar_mensaje("Éxito", "Datos guardados correctamente", QMessageBox.Information)
+        except Exception as e:
+            # Mostrar mensaje de error si hubo algún problema
+            self.mostrar_mensaje("Error", f"Ocurrió un error al guardar los datos: {str(e)}", QMessageBox.Critical)
 
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
