@@ -1,6 +1,10 @@
+import sqlite3
 import sys
 import os
 import requests
+import platform
+from reportlab.pdfgen import canvas
+from PyQt5.QtWidgets import QMessageBox
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QTextEdit, QWidget, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QMessageBox
@@ -208,6 +212,9 @@ class DiagnosticoWindow(QMainWindow):
         # Cargar diagnóstico del paciente si existe
         self.cargar_diagnostico_paciente()
 
+        # Conectar el botón de PDF con la función generar_pdf
+        self.boton_pdf.clicked.connect(self.generar_pdf)
+
     def cargar_diagnostico_paciente(self):
         """Función para cargar el diagnóstico del paciente si existe."""
         try:
@@ -304,6 +311,118 @@ class DiagnosticoWindow(QMainWindow):
         from gui.evaluacion_neuropsicologica import EvaluacionNeuropsicologicaWindow
         self.evaluacion_neuropsicologica = EvaluacionNeuropsicologicaWindow(self.paciente_seleccionado)
         self.evaluacion_neuropsicologica.show()
+    
+    def generar_pdf(self):
+        """Función para generar el PDF con la información del diagnóstico y otros detalles relevantes del paciente."""
+        # Ruta para guardar el PDF en la carpeta de Descargas
+        downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+        pdf_filename = os.path.join(downloads_path, f"diagnostico_{self.paciente_seleccionado['codigo_hc']}.pdf")
+
+        try:
+            # Crear un objeto canvas de ReportLab para el PDF
+            c = canvas.Canvas(pdf_filename)
+
+            # Obtener la información del paciente desde la base de datos
+            db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'instance', 'CAP.db'))
+
+            if not os.path.exists(db_path):
+                QMessageBox.critical(self, "Error", "El archivo de la base de datos no existe en la ruta especificada.")
+                return
+
+            # Configurar el cursor para que devuelva filas como diccionarios
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            # Extraer información del paciente
+            cursor.execute("SELECT * FROM pacientes WHERE codigo_hc=?", (self.paciente_seleccionado['codigo_hc'],))
+            paciente_data = cursor.fetchone()
+
+            # Extraer información del diagnóstico
+            cursor.execute("SELECT * FROM diagnosticos WHERE codigo_hc=?", (self.paciente_seleccionado['codigo_hc'],))
+            diagnostico_data = cursor.fetchone()
+
+            # Verificar si los datos del paciente y diagnóstico existen
+            if not paciente_data or not diagnostico_data:
+                QMessageBox.critical(self, "Error", "No se encontró información del paciente o del diagnóstico en la base de datos.")
+                return
+
+            # Iniciar posición vertical para la escritura
+            y_position = 800
+
+            # Escribir información en el PDF utilizando nombres de columnas correctos
+            c.setFont("Helvetica-Bold", 20)
+            c.drawString(100, y_position, "Historia Clínica Neuropsicológica")
+            y_position -= 40
+
+            c.setFont("Helvetica", 14)
+            c.drawString(100, y_position, f"Código: {paciente_data['codigo_hc']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Nombre del paciente: {paciente_data['nombre']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Edad: {paciente_data['edad']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Fecha de Nacimiento: {paciente_data['fecha_nacimiento']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Escolaridad (ID): {paciente_data['id_escolaridad']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Profesión: {paciente_data['profesion']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Teléfono: {paciente_data['telefono']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Celular: {paciente_data['celular']}")
+            y_position -= 20
+            c.drawString(100, y_position, f"Remisión: {paciente_data['remision']}")
+            y_position -= 40
+
+            # Conclusión
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(100, y_position, "Conclusión:")
+            y_position -= 20
+            c.setFont("Helvetica", 12)
+            c.drawString(120, y_position, diagnostico_data['conclusion'])
+            y_position -= 40
+
+            # Plan de Tratamiento
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(100, y_position, "Plan de Tratamiento:")
+            y_position -= 20
+            c.setFont("Helvetica", 12)
+            c.drawString(120, y_position, diagnostico_data['plan_Tratamiento'])
+            y_position -= 40
+
+            # Hipótesis Diagnóstica
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(100, y_position, "Hipótesis Diagnóstica:")
+            y_position -= 20
+            c.setFont("Helvetica", 12)
+
+            cursor.execute("""
+                SELECT h.descripcion 
+                FROM diagnostico_hipotesis dh
+                JOIN hipotesis h ON dh.codigo_hipotesis = h.id
+                WHERE dh.codigo_hc=?
+            """, (self.paciente_seleccionado['codigo_hc'],))
+            hipotesis = cursor.fetchall()
+            for hip in hipotesis:
+                c.drawString(120, y_position, f"- {hip['descripcion']}")
+                y_position -= 20
+
+            # Guardar el PDF
+            c.save()
+
+            # Mostrar mensaje de confirmación
+            QMessageBox.information(self, "Éxito", f"PDF generado exitosamente: {pdf_filename}")
+
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Error", f"Error en la base de datos: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Ha ocurrido un error: {str(e)}")
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
