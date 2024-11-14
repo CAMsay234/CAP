@@ -308,22 +308,22 @@ class PruebaLenguajeWindow(QMainWindow):
             media = media_widget.widget().text().strip() if media_widget and media_widget.widget() else ""
             ds = ds_widget.widget().text().strip() if ds_widget and ds_widget.widget() else ""
             interpretacion = interpretacion_widget.widget().text().strip() if interpretacion_widget and interpretacion_widget.widget() else None
-    
+
             if not interpretacion:
                 print(f"Faltan datos para la subprueba '{nombre_subprueba}'.")
                 return
-    
+
             # Verificar si la subprueba existe en la base de datos
             response = requests.get('http://localhost:5000/subpruebas')
             if response.status_code != 200:
                 print(f"Error al obtener las subpruebas: {response.status_code}")
                 return
-    
+
             subpruebas = response.json()
             subprueba_id = next(
                 (sp['id'] for sp in subpruebas if sp['nombre'].lower() == nombre_subprueba.lower()), None
             )
-    
+
             # Si no existe, registrar la subprueba
             if subprueba_id is None:
                 data = {"id_prueba": self.prueba_id, "nombre": nombre_subprueba}
@@ -333,7 +333,7 @@ class PruebaLenguajeWindow(QMainWindow):
                 else:
                     print(f"Error al registrar la subprueba '{nombre_subprueba}': {response.text}")
                     return
-    
+
             # Preparar los datos para guardar la evaluación
             data = {
                 "codigo_hc": self.paciente_seleccionado['codigo_hc'],
@@ -345,11 +345,11 @@ class PruebaLenguajeWindow(QMainWindow):
                 "escalar": "N/A",
                 "interpretacion": interpretacion
             }
-    
+
             # Verificar si ya existe la evaluación
             url = f"http://localhost:5000/evaluaciones/{self.paciente_seleccionado['codigo_hc']}/{self.prueba_id}/{subprueba_id}"
             response = requests.get(url)
-    
+
             if response.status_code == 404:
                 # Insertar nueva evaluación
                 response = requests.post('http://localhost:5000/evaluaciones', json=data)
@@ -364,18 +364,26 @@ class PruebaLenguajeWindow(QMainWindow):
                     print(f"Evaluación actualizada para '{nombre_subprueba}'.")
                 else:
                     print(f"Error al actualizar la evaluación: {response.text}")
-    
+
         # Obtener el ID de la prueba
         response = requests.get('http://localhost:5000/pruebas')
         if response.status_code != 200:
             print("Error al obtener las pruebas.")
             return
-    
+
         pruebas = response.json()
         self.prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == "lenguaje"), None)
         if self.prueba_id is None:
             print("Prueba no encontrada.")
             return
+
+        # Iterar sobre todas las filas de la tabla y procesar cada subprueba
+        for row in range(1, self.table_layout.rowCount()):
+            subprueba_widget = self.table_layout.itemAtPosition(row, 0)
+            if subprueba_widget and subprueba_widget.widget():
+                nombre_subprueba = subprueba_widget.widget().text().strip()
+                if nombre_subprueba:
+                    procesar_subprueba(row, nombre_subprueba, self.table_layout)
     
         # Procesar las subpruebas establecidas
         subpruebas = ["Fluidez verbal semántica", "Fluidez verbal fonológica", "Token test", "Vocabulario", "Comprensión", "Mecánica de la escritura/5", "Escritura seriada/47", "Otra prueba"]
