@@ -17,7 +17,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         self.setWindowTitle("Prueba capacidad intelectual")
         self.showMaximized()  # Abrir la ventana maximizada
         self.setStyleSheet("background-color: white;")  # Fondo blanco
- 
+        
         # Crear el scroll
         scroll = QScrollArea(self)
         scroll_widget = QWidget()
@@ -99,7 +99,10 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         # Configurar el scroll y añadir el widget principal
         scroll.setWidget(scroll_widget)
         self.setCentralWidget(scroll)
- 
+        self.cargar_conversiones()
+        self.cargar_puntuaciones_escalas()
+        self.cargar_puntajes()
+
     def abrir_evaluacion_neuropsicologica(self):
         if hasattr(self, 'paciente_seleccionado'):
             """Función para abrir la ventana de Evaluación Neuropsicológica."""
@@ -377,7 +380,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         # Iniciar el hilo
         thread = threading.Thread(target=guardar_conversion_thread)
         thread.start()
-
+    
     def guardar_todo(self):
         """Función para guardar tanto las pruebas como las conversiones."""
         self.guardar_prueba()
@@ -436,58 +439,6 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
  
         return escalar_layout    
  
-    def crear_rectangulos_puntuacion_escalar(self, fila):
-        escalar_layout = QHBoxLayout()
- 
-        # Definir los patrones de colores para cada fila
-        patrones = [
-            [True, False, True, True],  # Fila 1
-            [False, True, True, True],  # Fila 2
-            [True, True, False, True],  # Fila 3
-            [True, False, True, True],  # Fila 4
-            [False, True, True, True],  # Fila 5
-            [True, True, False, True],  # Fila 6
-            [True, True, True, False],  # Fila 7
-            [True, False, True, True],  # Fila 8
-            [False, True, True, True],  # Fila 9
-            [True, True, True, False],  # Fila 10
-            [True, True, False, True],  # Fila 11
-            [True, False, True, True],  # Fila 12
-            [False, True, True, True],  # Fila 13
-            [True, True, True, False],  # Fila 14
-            [True, False, True, True]   # Fila 15
-        ]
- 
-        # Obtener el patrón correspondiente para esta fila
-        patron = patrones[fila % len(patrones)]
- 
-        for i, pintar in enumerate(patron):
-            small_input = QLineEdit()
-            small_input.setFixedSize(40, 35)  # Tamaño del recuadro
-            small_input.setAlignment(Qt.AlignCenter)
- 
-            # Cambiar el color de fondo y habilitar o deshabilitar según el patrón
-            if pintar:
-                color_fondo = "#005BBB"  # Azul
-                color_texto = "white"  # Texto blanco
-                small_input.setReadOnly(True)  # Deshabilitar edición
-            else:
-                color_fondo = "#FFFFFF"  # Blanco
-                color_texto = "black"  # Texto negro
-                small_input.setReadOnly(False)  # Habilitar edición
- 
-            small_input.setStyleSheet(f"""
-                QLineEdit {{
-                    border: 1px solid black;
-                    border-radius: 5px;
-                    background-color: {color_fondo};
-                    color: {color_texto};
-                    font-weight: bold;
-                }}
-            """)
-            escalar_layout.addWidget(small_input)
- 
-        return escalar_layout
  
     def add_table(self, title, tests, layout):
         """Función para agregar una tabla con los datos de las pruebas."""
@@ -495,11 +446,11 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
         title_label.setFont(QFont('Arial', 16, QFont.Bold))
         title_label.setStyleSheet("color: black; background-color: #B0C4DE; padding: 10px;")
         layout.addWidget(title_label)
- 
+    
         # Crear el layout de la tabla
         self.table_layout = QGridLayout()  # Asegurarse de que self.table_layout esté disponible en toda la clase
         headers = ["PRUEBAS", "PUNTUACIÓN NATURAL", "PUNTUACIÓN ESCALAR", "PUNTUACIÓN ESCALAR TOTAL"]
- 
+    
         # Agregar encabezados a la tabla
         for col, header in enumerate(headers):
             header_label = QLabel(header)
@@ -507,7 +458,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
             header_label.setStyleSheet("color: white; background-color: #4A90E2; padding: 10px; border-radius: 5px;")
             header_label.setAlignment(Qt.AlignCenter)
             self.table_layout.addWidget(header_label, 0, col)
- 
+    
         # Agregar filas de pruebas
         for row, test in enumerate(tests, start=1):
             # Nombre de la prueba
@@ -515,7 +466,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
             test_label.setAlignment(Qt.AlignCenter)
             test_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px;")
             self.table_layout.addWidget(test_label, row, 0)
- 
+    
             # Campo de PUNTUACIÓN NATURAL
             natural_input = QLineEdit()
             natural_input.setFixedSize(100, 35)
@@ -528,15 +479,15 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                 }
             """)
             self.table_layout.addWidget(natural_input, row, 1)
- 
+    
             # PUNTUACIÓN ESCALAR - con 4 rectángulos pequeños
             escalar_layout = self.crear_rectangulos_puntuacion_escalar(row - 1)
- 
+    
             # Asegúrate de colocar el layout de forma correcta
             container_widget = QWidget()
             container_widget.setLayout(escalar_layout)
             self.table_layout.addWidget(container_widget, row, 2)
- 
+    
             # Campo de PUNTUACIÓN ESCALAR TOTAL
             total_input = QLineEdit()
             total_input.setFixedSize(100, 35)
@@ -549,7 +500,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
                 }
             """)
             self.table_layout.addWidget(total_input, row, 3)
- 
+    
         layout.addLayout(self.table_layout)
  
     def add_conversion(self, title, tests, layout):
@@ -602,6 +553,209 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
 
         layout.addLayout(self.conversion_layout)
 
+    def cargar_conversiones(self):
+            """Función para cargar los valores de la tabla de conversión."""
+            prueba_nombre = "Capacidad intelectual"
+        
+            # Obtener el ID de la prueba desde la API
+            response = requests.get('http://localhost:5000/pruebas')
+            if response.status_code != 200:
+                print("Error al obtener las pruebas")
+                return
+        
+            pruebas = response.json()
+            prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+            if prueba_id is None:
+                print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
+                return
+        
+            # Lista de subpruebas
+            subpruebas_nombres = ["COMPRENSIÓN VERBAL", "RAZONAMIENTO PERCEPTUAL", "MEMORIA DE TRABAJO", "VELOCIDAD DE PROCESAMIENTO", "TOTAL"]
+            subpruebas_ids = {}
+        
+            # Obtener los IDs de las subpruebas
+            response = requests.get(f'http://localhost:5000/subpruebas')
+            if response.status_code != 200:
+                print(f"Error al obtener las subpruebas: {response.status_code}")
+                return
+        
+            subpruebas = response.json()
+            for nombre in subpruebas_nombres:
+                subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == nombre.lower() and sp['id_prueba'] == prueba_id), None)
+                if subprueba_id is not None:
+                    subpruebas_ids[nombre] = subprueba_id
+                else:
+                    print(f"Subprueba '{nombre}' no encontrada en la base de datos.")
+        
+            # Obtener las conversiones desde la API
+            for nombre, subprueba_id in subpruebas_ids.items():
+                response = requests.get(f'http://localhost:5000/conversiones/{self.paciente_seleccionado["codigo_hc"]}/{prueba_id}/{subprueba_id}')
+                if response.status_code == 404:
+                    print(f"No se encontraron conversiones para la subprueba '{nombre}'.")
+                    continue
+                elif response.status_code != 200:
+                    print(f"Error al obtener las conversiones para la subprueba '{nombre}': {response.status_code}")
+                    continue
+        
+                conversion = response.json()
+        
+                # Llenar la tabla con los valores de la conversión
+                for row in range(1, self.conversion_layout.rowCount()):
+                    subprueba_widget = self.conversion_layout.itemAtPosition(row, 0)
+                    if subprueba_widget and subprueba_widget.widget() and subprueba_widget.widget().text().strip().lower() == nombre.lower():
+                        self.conversion_layout.itemAtPosition(row, 1).widget().setText(str(conversion['suma_puntuacion']))
+                        self.conversion_layout.itemAtPosition(row, 2).widget().setText(str(conversion['puntuacion_compuesta']))
+                        self.conversion_layout.itemAtPosition(row, 3).widget().setText(str(conversion['rango_percentil']))
+                        self.conversion_layout.itemAtPosition(row, 4).widget().setText(str(conversion['intervalo_confianza']))
+                        break
+
+
+    def cargar_puntuaciones_escalas(self):
+        """Función para cargar las puntuaciones escalares de las subpruebas."""
+        prueba_nombre = "Capacidad intelectual"
+    
+        # Obtener el ID de la prueba desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+    
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+        if prueba_id is None:
+            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
+            return
+    
+        # Lista de subpruebas
+        subpruebas_nombres = ["DISEÑO CON CUBOS", "SEMEJANZAS", "RETENCIÓN DE DÍGITOS", "MATRICES", "VOCABULARIO",
+                              "ARITMÉTICA", "BÚSQUEDA DE SÍMBOLOS", "ROMPECABEZAS VISUAL", "INFORMACIÓN", "CLAVES",
+                              "SUCESIÓN DE NÚMEROS Y LETRAS", "PESO FIGURADO", "COMPRENSIÓN", "CANCELACIÓN", "FIGURAS INCOMPLETAS"]
+        subpruebas_ids = {}
+    
+        # Obtener los IDs de las subpruebas
+        response = requests.get(f'http://localhost:5000/subpruebas')
+        if response.status_code != 200:
+            print(f"Error al obtener las subpruebas: {response.status_code}")
+            return
+    
+        subpruebas = response.json()
+        for nombre in subpruebas_nombres:
+            subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == nombre.lower() and sp['id_prueba'] == prueba_id), None)
+            if subprueba_id is not None:
+                subpruebas_ids[nombre] = subprueba_id
+            else:
+                print(f"Subprueba '{nombre}' no encontrada en la base de datos.")
+    
+        # Definir los patrones
+        patrones = [
+            [True, False, True, True],  # Fila 1
+            [False, True, True, True],  # Fila 2
+            [True, True, False, True],  # Fila 3
+            [True, False, True, True],  # Fila 4
+            [False, True, True, True],  # Fila 5
+            [True, True, False, True],  # Fila 6
+            [True, True, True, False],  # Fila 7
+            [True, False, True, True],  # Fila 8
+            [False, True, True, True],  # Fila 9
+            [True, True, True, False],  # Fila 10
+            [True, True, False, True],  # Fila 11
+            [True, False, True, True],  # Fila 12
+            [False, True, True, True],  # Fila 13
+            [True, True, True, False],  # Fila 14
+            [True, False, True, True]   # Fila 15
+        ]
+    
+        # Obtener las puntuaciones escalares desde la API
+        for nombre, subprueba_id in subpruebas_ids.items():
+            response = requests.get(f'http://localhost:5000/evaluaciones/{self.paciente_seleccionado["codigo_hc"]}/{prueba_id}/{subprueba_id}')
+            if response.status_code == 404:
+                print(f"No se encontraron puntuaciones escalares para la subprueba '{nombre}'.")
+                continue
+            elif response.status_code != 200:
+                print(f"Error al obtener las puntuaciones escalares para la subprueba '{nombre}': {response.status_code}")
+                continue
+    
+            evaluacion = response.json()
+    
+            # Llenar la tabla con los valores de la puntuación escalar
+            for row in range(1, self.table_layout.rowCount()):
+                subprueba_widget = self.table_layout.itemAtPosition(row, 0)
+                if subprueba_widget and subprueba_widget.widget() and subprueba_widget.widget().text().strip().lower() == nombre.lower():
+                    escalar_container = self.table_layout.itemAtPosition(row, 2)
+                    if escalar_container:
+                        escalar_layout = escalar_container.widget().layout()
+                        escalar_values = evaluacion['escalar'].split(", ")
+                        patron = patrones[(row - 1) % len(patrones)]  # Obtener el patrón correcto
+                        for i, pintar in enumerate(patron):
+                            if not pintar:  # Si el campo está habilitado (False en el patrón)
+                                escalar_input = escalar_layout.itemAt(i).widget()
+                                if escalar_input:
+                                    escalar_input.setText(escalar_values.pop(0))
+                    break
+
+    def cargar_puntajes(self):
+        """Función para cargar el puntaje natural y la puntuación escalar total de las subpruebas."""
+        prueba_nombre = "Capacidad intelectual"
+
+        # Obtener el ID de la prueba desde la API
+        response = requests.get('http://localhost:5000/pruebas')
+        if response.status_code != 200:
+            print("Error al obtener las pruebas")
+            return
+
+        pruebas = response.json()
+        prueba_id = next((p['id'] for p in pruebas if p['nombre'].lower() == prueba_nombre.lower()), None)
+        if prueba_id is None:
+            print(f"Prueba '{prueba_nombre}' no encontrada en la base de datos.")
+            return
+
+        # Lista de subpruebas
+        subpruebas_nombres = ["DISEÑO CON CUBOS", "SEMEJANZAS", "RETENCIÓN DE DÍGITOS", "MATRICES", "VOCABULARIO",
+                            "ARITMÉTICA", "BÚSQUEDA DE SÍMBOLOS", "ROMPECABEZAS VISUAL", "INFORMACIÓN", "CLAVES",
+                            "SUCESIÓN DE NÚMEROS Y LETRAS", "PESO FIGURADO", "COMPRENSIÓN", "CANCELACIÓN", "FIGURAS INCOMPLETAS"]
+        subpruebas_ids = {}
+
+        # Obtener los IDs de las subpruebas
+        response = requests.get(f'http://localhost:5000/subpruebas')
+        if response.status_code != 200:
+            print(f"Error al obtener las subpruebas: {response.status_code}")
+            return
+
+        subpruebas = response.json()
+        for nombre in subpruebas_nombres:
+            subprueba_id = next((sp['id'] for sp in subpruebas if sp['nombre'].lower() == nombre.lower() and sp['id_prueba'] == prueba_id), None)
+            if subprueba_id is not None:
+                subpruebas_ids[nombre] = subprueba_id
+            else:
+                print(f"Subprueba '{nombre}' no encontrada en la base de datos.")
+
+        # Obtener los puntajes desde la API
+        for nombre, subprueba_id in subpruebas_ids.items():
+            response = requests.get(f'http://localhost:5000/evaluaciones/{self.paciente_seleccionado["codigo_hc"]}/{prueba_id}/{subprueba_id}')
+            if response.status_code == 404:
+                print(f"No se encontraron puntajes para la subprueba '{nombre}'.")
+                continue
+            elif response.status_code != 200:
+                print(f"Error al obtener los puntajes para la subprueba '{nombre}': {response.status_code}")
+                continue
+
+            evaluacion = response.json()
+
+            # Llenar la tabla con los valores del puntaje natural y la puntuación escalar total
+            for row in range(1, self.table_layout.rowCount()):
+                subprueba_widget = self.table_layout.itemAtPosition(row, 0)
+                if subprueba_widget and subprueba_widget.widget() and subprueba_widget.widget().text().strip().lower() == nombre.lower():
+                    # Puntaje natural
+                    natural_input = self.table_layout.itemAtPosition(row, 1).widget()
+                    if natural_input:
+                        natural_input.setText(str(evaluacion['puntaje']))
+
+                    # Puntuación escalar total
+                    total_input = self.table_layout.itemAtPosition(row, 3).widget()
+                    if total_input:
+                        total_input.setText(str(evaluacion['escalar']))
+
+                    break
 # Función para ejecutar la aplicación
 if __name__ == "__main__":
     app = QApplication(sys.argv)
