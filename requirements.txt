@@ -29,5 +29,13 @@ typing_extensions>=4.12.0
 tomli>=2.0.0
 pywin32-ctypes>=0.2.0
 exceptiongroup>=1.2.0
+<<<<<<< HEAD
 pefile>=2024.8.0
 reportlab>=3.6.0
+=======
+<<<<<<< HEAD
+pefile>=2024.8.0
+=======
+pefile>=2024.8.0
+>>>>>>> 81d777b2fe4b92809e1588a262972d9b0a88b1b3
+>>>>>>> 12e86b228aa314a32de664ee6d9e2d3bb5af5653
