@@ -513,7 +513,7 @@ class PruebaCapacidadIntelectualWindow(QMainWindow):
 
         self.conversion_layout = QGridLayout()  # Crear el layout de conversiones
         headers = ["ESCALA", "SUMA PUNTUACIONES ESCALARES", "PUNTUACIÓN COMPUESTA",
-                "RANGO PERCENTIL", "INTERVALO CONFIANZA, TOTAL"]
+                "RANGO PERCENTIL", "INTERVALO CONFIANZA"]
 
         # Agregar encabezados
         for col, header in enumerate(headers):

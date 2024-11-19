@@ -4,10 +4,12 @@ from PyQt5.QtWidgets import QApplication
 from app import create_app
 from gui.main_window import LoginWindow
 import time
+from app.config.setup_db import create_tables_and_indices 
  
 def run_flask():
     print("Iniciando el servidor Flask...")
     app = create_app()
+    create_tables_and_indices()
     app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
  
 def run_pyqt():
@@ -35,3 +37,5 @@ if __name__ == "__main__":
  
     finally:
         print("Aplicación terminada.")
+ 
+ 
